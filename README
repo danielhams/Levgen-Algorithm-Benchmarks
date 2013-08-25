@@ -1,0 +1,15 @@
+Level Generation Algorithm Tester/Benchmarker.
+
+The language shootouts made available (1) use a brute force algorithm for placing randomly sized rooms inside a specified dimension of level. A number of levels are generated and the "winner" based on some criteria is picked.
+
+This project aims to investigate ways in which to speed up the production of candidate levels through the use of differing random number generators, room collision testers and even entirely different algorithmic approaches.
+
+Currently implemented are brute force variations:
+
+* Brute force room placement with trivial collision test and linux rand_r re-entrant random number generator
+* Brute force room placement with trivial collision test and an XOR random number generator
+* Brute force room placement using a quad tree collision test and linux rand_r re-entrant random number generator
+* Brute force room placement using a quad tree collision test and an XOR random number generator
+
+(1) http://togototo.wordpress.com
+
