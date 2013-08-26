@@ -15,6 +15,8 @@ level_generator_SOURCES=						\
 	RandGenerators.hpp							\
 	QuadTree.cpp								\
 	QuadTree.hpp								\
+	OcclusionBuffer.cpp							\
+	OcclusionBuffer.hpp							\
 	Utils.cpp									\
 	Utils.hpp									\
 	$(NULL)

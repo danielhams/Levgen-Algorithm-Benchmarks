@@ -24,6 +24,7 @@
 
 #include "GeneratorBase.hpp"
 #include "QuadTree.hpp"
+#include "OcclusionBuffer.hpp"
 
 namespace level_generator
 {
@@ -91,6 +92,20 @@ class FixedLevelQuadTreeThreadLocalHelper : public GenerationThreadLocalHelperBa
 
 public:
     FixedLevelQuadTreeThreadLocalHelper( const LevelGeneratorConfiguration & configuration, const uint32_t treeDepth = 3 );
+
+    bool isCollision( Level & l, const vec4uint32 & roomDim );
+
+    void addRoom( vec4uint32 * r );
+
+    void clearForNewLevel();
+};
+
+class OcclusionThreadLocalHelper : public GenerationThreadLocalHelperBase {
+    const LevelGeneratorConfiguration configuration_;
+    OcclusionBuffer occlusionBuffer_;
+
+public:
+    OcclusionThreadLocalHelper( const LevelGeneratorConfiguration & configuration );
 
     bool isCollision( Level & l, const vec4uint32 & roomDim );
 

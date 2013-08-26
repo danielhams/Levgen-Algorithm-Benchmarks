@@ -54,6 +54,7 @@ using level_generator::LevelGenerator;
 using level_generator::BruteForceGenerationStrategy;
 using level_generator::SimpleCollisionThreadLocalHelper;
 using level_generator::FixedLevelQuadTreeThreadLocalHelper;
+using level_generator::OcclusionThreadLocalHelper;
 
 namespace po = boost::program_options;
 
@@ -73,7 +74,7 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "Show this help message")
-        ("dimx", po::value<int>(), "Level dimension in x (10<=N<=2000)")
+        ("dimx", po::value<int>(), "Level dimension in x (10<=N<=8192)")
         ("dimy", po::value<int>(), "Level dimension in y")
         ("smallroom", po::value<int>(), "Minimum room size (> 3)")
         ("bigroom", po::value<int>(), "Maximum room size (N<=(min dim -2)")
@@ -104,12 +105,12 @@ int main(int argc, char** argv)
         try {
             // Validate the parameters
             dimensionx = vm["dimx"].as<int>();
-            if( dimensionx < 3 || dimensionx > 2000 )
+            if( dimensionx < 3 || dimensionx > 8192 )
             {
                 showUsageSummary = true;
             }
             dimensiony = vm["dimy"].as<int>();
-            if( dimensiony < 3 || dimensiony > 2000 )
+            if( dimensiony < 3 || dimensiony > 8192 )
             {
                 showUsageSummary = true;
             }
@@ -250,6 +251,19 @@ int main(int argc, char** argv)
                 saveLevelPpm( cbfqtLevel, "bruteforcefixedquadtreecrand.ppm" );
                 timer.markBoundary( "Save ppm" );
                 log() << "bf qt cr rooms " << cbfqtLevel.rooms.size() << std::endl;
+            }
+
+            {
+                timer.markBoundary( "Beginning crand occlusion buffer" );
+                BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper> cbruteForceOcclusionBufferStrategy( lc, cRandGenerator );
+                LevelGenerator<BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
+                    cbfobLevelGenerator( lc, cbruteForceOcclusionBufferStrategy );
+                cbfobLevelGenerator.generateLevels();
+                Level & cbfobLevel( cbfobLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post BruteForce Occlussion Buffer CRand" );
+                saveLevelPpm( cbfobLevel, "bruteforceocclusionbuffercrand.ppm" );
+                timer.markBoundary( "Save ppm" );
+                log() << "bf ob cr rooms " << cbfobLevel.rooms.size() << std::endl;
             }
 
             timer.logTimes( "Time taken " );
