@@ -79,7 +79,7 @@ int main(int argc, char** argv)
         ("smallroom", po::value<int>(), "Minimum room size (> 3)")
         ("bigroom", po::value<int>(), "Maximum room size (N<=(min dim -2)")
         ("levels", po::value<int>(), "Number of levels to generate (1<=N<=5000)")
-        ("maxrooms", po::value<int>(), "Maximum number of rooms per level (1<=N<=50000)")
+        ("maxrooms", po::value<int>(), "Maximum number of rooms per level (1<=N<=100000)")
         ("threads", po::value<int>(), "Number of threads (1<=N<=4)")
         ("seed", po::value<int>(), "Set the random number seed");
 
@@ -115,12 +115,12 @@ int main(int argc, char** argv)
                 showUsageSummary = true;
             }
             minroomsize = vm["smallroom"].as<int>();
-            if( minroomsize < 1 || minroomsize > 50 )
+            if( minroomsize < 1 || minroomsize > 100 )
             {
                 showUsageSummary = true;
             }
             maxroomsize = vm["bigroom"].as<int>();
-            if( maxroomsize < 1 || maxroomsize > 50 )
+            if( maxroomsize < 1 || maxroomsize > 100 )
             {
                 showUsageSummary = true;
             }
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
                 showUsageSummary = true;
             }
             numRooms = vm["maxrooms"].as<int>();
-            if( numRooms < 1 || numRooms > 50000 )
+            if( numRooms < 1 || numRooms > 100000 )
             {
                 showUsageSummary = true;
             }
