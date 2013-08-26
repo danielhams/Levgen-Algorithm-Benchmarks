@@ -68,7 +68,7 @@ OcclusionThreadLocalHelper::OcclusionThreadLocalHelper( const LevelGeneratorConf
 }
 
 bool OcclusionThreadLocalHelper::isCollision( Level & l, const vec4uint32 & roomDim ) {
-    return occlusionBuffer_.isOccluded( roomDim );
+    return occlusionBuffer_.isExpandedOccluded( roomDim );
 }
 
 void OcclusionThreadLocalHelper::addRoom( vec4uint32 * r ) {

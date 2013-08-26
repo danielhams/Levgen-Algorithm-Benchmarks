@@ -31,6 +31,7 @@
 #include "RandGenerators.hpp"
 #include "GeneratorBase.hpp"
 #include "BruteForceGenerator.hpp"
+#include "FreeListGenerator.hpp"
 
 using std::cout;
 using std::endl;
@@ -56,6 +57,10 @@ using level_generator::SimpleCollisionThreadLocalHelper;
 using level_generator::FixedLevelQuadTreeThreadLocalHelper;
 using level_generator::OcclusionThreadLocalHelper;
 
+using level_generator::FreeListMinSizeSelector;
+using level_generator::FreeListThreadLocalHelper;
+using level_generator::FreeListGenerationStrategy;
+
 namespace po = boost::program_options;
 
 const string version( PACKAGE_VERSION );
@@ -80,6 +85,7 @@ int main(int argc, char** argv)
         ("bigroom", po::value<int>(), "Maximum room size (N<=(min dim -2)")
         ("levels", po::value<int>(), "Number of levels to generate (1<=N<=5000)")
         ("maxrooms", po::value<int>(), "Maximum number of rooms per level (1<=N<=100000)")
+        ("maxroomattempts", po::value<int>(), "Maximum number of attempts to create a room per level (1<=N<=100000)")
         ("threads", po::value<int>(), "Number of threads (1<=N<=4)")
         ("seed", po::value<int>(), "Set the random number seed");
 
@@ -95,6 +101,7 @@ int main(int argc, char** argv)
     int32_t maxroomsize = -1;
     int32_t numLevels = -1;
     int32_t numRooms = -1;
+    int32_t maxRoomAttempts = -1;
     int32_t numThreads = -1;
     if( vm.size() == 0 || vm.count("help"))
     {
@@ -131,6 +138,11 @@ int main(int argc, char** argv)
             }
             numRooms = vm["maxrooms"].as<int>();
             if( numRooms < 1 || numRooms > 100000 )
+            {
+                showUsageSummary = true;
+            }
+            maxRoomAttempts = vm["maxroomattempts"].as<int>();
+            if( maxRoomAttempts < 1 || maxRoomAttempts > 100000 )
             {
                 showUsageSummary = true;
             }
@@ -186,6 +198,7 @@ int main(int argc, char** argv)
             (uint32_t)(maxroomsize - minroomsize),
             (uint32_t)numLevels,
             (uint32_t)numRooms,
+            (uint32_t)maxRoomAttempts,
             (uint32_t)numThreads };
 
         log() << "LevelGeneratorConfiguration: " << lc << endl;
@@ -201,7 +214,7 @@ int main(int argc, char** argv)
 
             Timer timer;
             timer.markBoundary( "Begin" );
-
+            /*
             {
                 timer.markBoundary( "Begin genrand simple" );
                 BruteForceGenerationStrategy<GenRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceGenrandGenerationStrategy( lc, genRandGenerator );
@@ -254,6 +267,19 @@ int main(int argc, char** argv)
             }
 
             {
+                timer.markBoundary( "Beginning genrand occlusion buffer" );
+                BruteForceGenerationStrategy<GenRandGenerator, OcclusionThreadLocalHelper> gbruteForceOcclusionBufferStrategy( lc, genRandGenerator );
+                LevelGenerator<BruteForceGenerationStrategy<GenRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
+                    gbfobLevelGenerator( lc, gbruteForceOcclusionBufferStrategy );
+                gbfobLevelGenerator.generateLevels();
+                Level & gbfobLevel( gbfobLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post BruteForce Occlussion Buffer GenRand" );
+                saveLevelPpm( gbfobLevel, "bruteforceocclusionbuffergenrand.ppm" );
+                timer.markBoundary( "Save ppm" );
+                log() << "bf ob gr rooms " << gbfobLevel.rooms.size() << std::endl;
+            }
+
+            {
                 timer.markBoundary( "Beginning crand occlusion buffer" );
                 BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper> cbruteForceOcclusionBufferStrategy( lc, cRandGenerator );
                 LevelGenerator<BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
@@ -264,6 +290,19 @@ int main(int argc, char** argv)
                 saveLevelPpm( cbfobLevel, "bruteforceocclusionbuffercrand.ppm" );
                 timer.markBoundary( "Save ppm" );
                 log() << "bf ob cr rooms " << cbfobLevel.rooms.size() << std::endl;
+            }
+            */
+            {
+                timer.markBoundary( "Beginning crand free list" );
+                typedef FreeListThreadLocalHelper<CRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;
+                FreeListGenerationStrategy<CRandGenerator, FreeListMinHelper> flcrStrategy( lc, cRandGenerator );
+                LevelGenerator<FreeListGenerationStrategy<CRandGenerator, FreeListMinHelper>, FreeListMinHelper> flcrLevelGenerator( lc, flcrStrategy );
+                flcrLevelGenerator.generateLevels();
+                Level & flcrLevel( flcrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post Free List CRand" );
+                saveLevelPpm( flcrLevel, "freelistcrand.ppm" );
+                timer.markBoundary( "Save ppm" );
+                log() << "fl cr rooms " << flcrLevel.rooms.size() << std::endl;
             }
 
             timer.logTimes( "Time taken " );

@@ -29,14 +29,25 @@ namespace level_generator
 {
 
 OcclusionBuffer::OcclusionBuffer( const vec2uint32 & dimensions ) :
-        buffer_(dimensions.x * dimensions.y),
-        dimensions_( dimensions ) {
+        buffer(dimensions.x * dimensions.y),
+        dimensions( dimensions ) {
 };
 
 bool OcclusionBuffer::isOccluded( const vec4uint32 & toTest ){
-    for( uint32_t y = toTest.y - 1 ; y <= toTest.y + toTest.h ; ++y ) {
-        for( uint32_t x = toTest.x - 1 ; x <= toTest.x + toTest.w ; ++x ) {
-            if( buffer_[ (y*dimensions_.x) + x ] ) {
+    for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
+        for( uint32_t x = toTest.x ; x < toTest.x + toTest.w ; ++x ) {
+            if( buffer[ (y*dimensions.x) + x ] ) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool OcclusionBuffer::isExpandedOccluded( const vec4uint32 & toTest ){
+    for( uint32_t y = toTest.y-1 ; y <= toTest.y + toTest.h ; ++y ) {
+        for( uint32_t x = toTest.x-1 ; x <= toTest.x + toTest.w ; ++x ) {
+            if( buffer[ (y*dimensions.x) + x ] ) {
                 return true;
             }
         }
@@ -47,13 +58,13 @@ bool OcclusionBuffer::isOccluded( const vec4uint32 & toTest ){
 void OcclusionBuffer::occlude( const vec4uint32 & toTest ) {
     for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
         for( uint32_t x = toTest.x ; x < toTest.x + toTest.w ; ++x ) {
-            buffer_[ (y*dimensions_.x) + x ] = 1;
+            buffer[ (y*dimensions.x) + x ] = 1;
         }
     }
 }
 
 void OcclusionBuffer::clear(){
-    std::fill( buffer_.begin(), buffer_.end(), 0 );
+    std::fill( buffer.begin(), buffer.end(), 0 );
 }
 
 } /* namespace level_generator */

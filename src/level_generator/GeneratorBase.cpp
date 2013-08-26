@@ -43,7 +43,7 @@ ostream & operator<<( ostream & out, const vec4uint32 & vec4) {
 ostream & operator<<( ostream & out, const LevelGeneratorConfiguration & lc ) {
     out << "seed(" << lc.seed << ") levelDimensions" << lc.levelDimension << " roomSizes(" <<
             lc.minroomsize << "->" << lc.maxroomsize << "[" << lc.roomSizeVariance << "]) numLevels(" << lc.numLevels <<
-            ") numRooms(" << lc.numRooms << ") numThreads(" << lc.numThreads << ")";
+            ") numRooms(" << lc.numRooms << ") maxRoomAttempts(" << lc.maxRoomAttempts << ") numThreads(" << lc.numThreads << ")";
     return out;
 }
 

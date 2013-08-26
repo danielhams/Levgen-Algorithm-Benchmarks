@@ -66,6 +66,7 @@ struct LevelGeneratorConfiguration {
     const uint32_t roomSizeVariance;
     const uint32_t numLevels;
     const uint32_t numRooms;
+    const uint32_t maxRoomAttempts;
     const uint32_t numThreads;
 };
 
@@ -96,10 +97,10 @@ class LevelGenerator : LevelGeneratorBase
     std::vector<Level> levels_;
 
     void generateLevelsForPartition_( uint32_t seed, const uint32_t partitionStartIndex, const uint32_t partitionEndIndex ) {
-        ThreadLocalGenerationHelper threadLocalGenerationHelper( configuration_ );
+        ThreadLocalGenerationHelper threadLocalGenerationHelper( generationStrategy_.newThreadLocalHelper() );
+
         log() << "Would generate with seed " << seed << " levels(" << partitionStartIndex << "->" << partitionEndIndex << ")" << std::endl;
         for( uint32_t i = partitionStartIndex ; i < partitionEndIndex ; i++ ) {
-            threadLocalGenerationHelper.clearForNewLevel();
             Level & l( levels_[i] );
             generationStrategy_.fillLevel( threadLocalGenerationHelper, l, seed );
         }

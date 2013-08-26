@@ -63,9 +63,10 @@ public:
         randGenerator_( randGenerator ) {};
 
     void fillLevel( ThreadLocalGenerationHelper & threadLocalCollisionTester, Level & level, uint32_t & gen ) {
+        threadLocalCollisionTester.clearForNewLevel();
         level.rooms.reserve( configuration_.numRooms );
         uint32_t numRoomsMade( 0 );
-        for( uint32_t ii = 0 ; ii < 50000 ; ++ii ) {
+        for( uint32_t ii = 0 ; ii < configuration_.maxRoomAttempts ; ++ii ) {
 //            debugRooms( level );
             numRoomsMade += static_cast<uint32_t>( makeRoomSilentlyFail_( threadLocalCollisionTester, level, gen ) );
             if( numRoomsMade >= configuration_.numRooms ) {
@@ -74,6 +75,10 @@ public:
         }
         level.fillTiles();
     };
+
+    ThreadLocalGenerationHelper newThreadLocalHelper() {
+        return ThreadLocalGenerationHelper( configuration_ );
+    }
 };
 
 struct SimpleCollisionThreadLocalHelper : public GenerationThreadLocalHelperBase {

@@ -28,13 +28,15 @@ namespace level_generator
 {
 
 class OcclusionBuffer{
-    std::vector<uint8_t> buffer_;
-    const vec2uint32 dimensions_;
 
 public:
+    std::vector<uint8_t> buffer;
+    const vec2uint32 dimensions;
+
     OcclusionBuffer( const vec2uint32 & dimensions );
 
     bool isOccluded( const vec4uint32 & toTest );
+    bool isExpandedOccluded( const vec4uint32 & toTest );
 
     void occlude( const vec4uint32 & toOcclude );
 

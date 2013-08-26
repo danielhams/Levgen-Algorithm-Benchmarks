@@ -38,31 +38,11 @@ struct AABB {
     vec4uint32 dimensions;
     uint32_t ex, ey, doublemidx, doublemidy;
 
-    AABB() {};
-    explicit AABB( vec4uint32 dimensions ) :
-        dimensions( dimensions ),
-        ex( dimensions.x + dimensions.w ),
-        ey( dimensions.y + dimensions.h ),
-        doublemidx( (2 * dimensions.x) + dimensions.w ),
-        doublemidy( (2 * dimensions.y) + dimensions.h ) {
-    }
+    AABB();
+    explicit AABB( vec4uint32 dimensions );
 
-    bool intersects( const AABB & c ) const {
-        // We use 2*vals so we can stick with integer arith
-        // (since we could have things where width = 1 or height = 1)
-        int32_t xdd( c.doublemidx - doublemidx );
-        int32_t ydd( c.doublemidy - doublemidy );
-
-        return std::abs(xdd) <= (dimensions.w + c.dimensions.w) && std::abs(ydd) <= (dimensions.h + c.dimensions.h);
-    }
-
-    bool intersects( const vec4uint32 & r ) const {
-        int32_t xdd( ((2*r.x)+r.w) - doublemidx );
-        int32_t ydd( ((2*r.y)+r.h) - doublemidy );
-
-        return std::abs(xdd) <= (dimensions.w + r.w) && std::abs(ydd) <= (dimensions.h + r.h);
-    }
-
+    bool intersects( const AABB & c ) const;
+    bool intersects( const vec4uint32 & r ) const;
     inline bool intersects( const vec4uint32 * r ) const {
         return intersects( *r );
     }

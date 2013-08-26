@@ -11,6 +11,10 @@ level_generator_SOURCES=						\
 	GeneratorBase.hpp							\
 	BruteForceGenerator.cpp						\
 	BruteForceGenerator.hpp						\
+	FreeListGenerator.cpp						\
+	FreeListGenerator.hpp						\
+	FreeEntryCache.cpp							\
+	FreeEntryCache.hpp							\
 	RandGenerators.cpp							\
 	RandGenerators.hpp							\
 	QuadTree.cpp								\
