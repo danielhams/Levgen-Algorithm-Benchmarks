@@ -1,8 +1,22 @@
 /*
- * OcclusionBuffer.cpp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- *  Created on: Aug 26, 2013
- *      Author: dan
+ * Copyright 2013 Daniel Hams
+ *
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published
+ * by the Free Software Foundation; either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this work; if not, see http://www.gnu.org/licenses/
+ *
  */
 
 #include <cstdint>
@@ -14,48 +28,32 @@
 namespace level_generator
 {
 
-OcclusionBuffer::OcclusionBuffer(int w, int h)
-    :buffer(w*h), width(w), height(h){
+OcclusionBuffer::OcclusionBuffer( const vec2uint32 & dimensions ) :
+        buffer_(dimensions.x * dimensions.y),
+        dimensions_( dimensions ) {
 };
 
-bool OcclusionBuffer::isOccluded(int minx, int miny, int maxx, int maxy){
-    int      line   = maxx-minx+1;
-    int      lines  = maxy-miny+1;
-    int      stride = width-line;
-    uint8_t* p      = buffer.data()+minx+width*miny;
-
-    // test region if any point is marked
-    while(lines--){
-        int templine = line;
-        while(templine--){
-            if (*p)
+bool OcclusionBuffer::isOccluded( const vec4uint32 & toTest ){
+    for( uint32_t y = toTest.y - 1 ; y <= toTest.y + toTest.h ; ++y ) {
+        for( uint32_t x = toTest.x - 1 ; x <= toTest.x + toTest.w ; ++x ) {
+            if( buffer_[ (y*dimensions_.x) + x ] ) {
                 return true;
-            p++;
+            }
         }
-        p+=stride;
     }
     return false;
 }
 
-void OcclusionBuffer::occlude(int minx, int miny, int maxx, int maxy){
-    int      line   = maxx-minx+1;
-    int      lines  = maxy-miny+1;
-    int      stride = width-line;
-    uint8_t* p      = buffer.data()+minx+width*miny;
-
-    //mark region
-    while(lines--){
-        int templine = line;
-        while(templine--){
-            *p = 1;
-            p++;
+void OcclusionBuffer::occlude( const vec4uint32 & toTest ) {
+    for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
+        for( uint32_t x = toTest.x ; x < toTest.x + toTest.w ; ++x ) {
+            buffer_[ (y*dimensions_.x) + x ] = 1;
         }
-        p+=stride;
     }
 }
 
 void OcclusionBuffer::clear(){
-    std::fill( buffer.begin(), buffer.end(), 0 );
+    std::fill( buffer_.begin(), buffer_.end(), 0 );
 }
 
 } /* namespace level_generator */

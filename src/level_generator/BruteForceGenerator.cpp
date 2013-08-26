@@ -64,15 +64,15 @@ void FixedLevelQuadTreeThreadLocalHelper::clearForNewLevel() {
 
 OcclusionThreadLocalHelper::OcclusionThreadLocalHelper( const LevelGeneratorConfiguration & configuration ) :
         configuration_( configuration ),
-        occlusionBuffer_( configuration_.levelDimension.x, configuration_.levelDimension.y ) {
+        occlusionBuffer_( configuration_.levelDimension ) {
 }
 
 bool OcclusionThreadLocalHelper::isCollision( Level & l, const vec4uint32 & roomDim ) {
-    return occlusionBuffer_.isOccluded( roomDim.x, roomDim.y, roomDim.x + roomDim.w, roomDim.y + roomDim.h );
+    return occlusionBuffer_.isOccluded( roomDim );
 }
 
 void OcclusionThreadLocalHelper::addRoom( vec4uint32 * r ) {
-    occlusionBuffer_.occlude( r->x, r->y, r->x + r->w, r->y + r->h );
+    occlusionBuffer_.occlude( *r );
 }
 
 void OcclusionThreadLocalHelper::clearForNewLevel() {
