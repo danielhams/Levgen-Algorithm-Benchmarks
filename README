@@ -10,6 +10,12 @@ Currently implemented are brute force variations:
 * Brute force room placement with trivial collision test and an XOR random number generator
 * Brute force room placement using a quad tree collision test and linux rand_r re-entrant random number generator
 * Brute force room placement using a quad tree collision test and an XOR random number generator
+* Brute force room placement using an Occlusion buffer for the collision test and rand_r
+* Brute force room placement using an Occlusion buffer for the collision test and XOR
+* Random room size placement using min free space available with rand_r
+* Random room size placement using min free space available with XOR
+* Random room size placement using max free space available with rand_r
+* Random room size placement using max free space available with XOR
 
 (1) http://togototo.wordpress.com
 
