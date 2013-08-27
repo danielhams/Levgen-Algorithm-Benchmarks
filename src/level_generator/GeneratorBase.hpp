@@ -72,6 +72,11 @@ struct LevelGeneratorConfiguration {
 
 std::ostream & operator<<( std::ostream & out, const LevelGeneratorConfiguration & lc );
 
+struct Room : public vec4uint32 {
+    Room( uint32_t & randGen, const vec4uint32 & bounds, const uint8_t rgbi[3] );
+    uint8_t rgb[3];
+};
+
 class Level
 {
 public:
@@ -81,8 +86,8 @@ public:
     void fillTiles();
 
     vec2uint32 dimension;
-    std::vector<vec4uint32> rooms;
-    std::vector<bool> tiles;
+    std::vector<Room> rooms;
+    std::vector<Room*> tiles;
 };
 
 class LevelGeneratorBase {
@@ -154,9 +159,10 @@ public:
     template <typename LevelMetric>
     Level & pickLevelByCriteria( LevelMetric levelMetric ) {
         auto lIter = levels_.begin(), lEnd = levels_.end();
-        Level * result( &*lIter++ );
+        Level * result( &(*lIter) );
+        lIter++;
         for( ; lIter != lEnd ; ++lIter ) {
-            if( levelMetric.compare( *result, *lIter ) ) result = &*lIter;
+            if( levelMetric.compare( *result, *lIter ) ) result = &(*lIter);
         }
         return *result;
     }
@@ -169,6 +175,7 @@ public:
 };
 
 class GenerationThreadLocalHelperBase {
+protected:
     static Log log;
 };
 
@@ -176,6 +183,24 @@ class GenerationThreadLocalHelperBase {
 struct NumRoomsMetric {
     inline bool compare( const Level & x, const Level & y ) {
         return y.rooms.size() > x.rooms.size();
+    }
+};
+
+struct MinSpaceMetric {
+    inline bool compare( const Level & x, const Level & y ) {
+        uint32_t ySpaceCount( 0 );
+        for( uint32_t i ; i < y.tiles.size() ; ++i ) {
+            if( y.tiles[i] != nullptr ) {
+                ySpaceCount++;
+            }
+        }
+        uint32_t xSpaceCount( 0 );
+        for( uint32_t i ; i < x.tiles.size() ; ++i ) {
+            if( x.tiles[i] != nullptr ) {
+                xSpaceCount++;
+            }
+        }
+        return ySpaceCount < xSpaceCount;
     }
 };
 

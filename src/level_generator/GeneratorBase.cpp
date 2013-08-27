@@ -49,9 +49,19 @@ ostream & operator<<( ostream & out, const LevelGeneratorConfiguration & lc ) {
     return out;
 }
 
+Room::Room( uint32_t & randGen, const vec4uint32 & bounds, const uint8_t rgbi[3] ) :
+        vec4uint32( bounds ) {
+    rgb[0] = rgbi[0];
+    rgb[1] = rgbi[1];
+    rgb[2] = rgbi[2];
+//    rgb[0] = 64 + ( rand_r( &randGen ) % 128);
+//    rgb[1] = 64 + ( rand_r( &randGen ) % 128);
+//    rgb[2] = 64 + ( rand_r( &randGen ) % 128);
+}
+
 Level::Level( const vec2uint32 dimension, const uint32_t numRooms ) :
     dimension( dimension ),
-    tiles( dimension.x * dimension.y ) {
+    tiles( dimension.x * dimension.y, nullptr ) {
 }
 
 uint32_t Level::xy2i( const uint32_t x, const uint32_t y ) const {
@@ -59,10 +69,10 @@ uint32_t Level::xy2i( const uint32_t x, const uint32_t y ) const {
 };
 
 void Level::fillTiles() {
-    for( vec4uint32 & r : rooms ) {
+    for( Room & r : rooms ) {
         for( uint32_t yi = r.y ; yi < ( r.y + r.h ) ; ++yi ) {
             for( uint32_t xi = r.x ; xi < ( r.x + r.w ) ; ++xi ) {
-                tiles[ xy2i( xi, yi ) ] = true;
+                tiles[ xy2i( xi, yi ) ] = &r;
             }
         }
     }
@@ -72,7 +82,7 @@ Log GenerationStrategyBase::log("GenerationStrategyBase");
 
 void GenerationStrategyBase::debugRooms( Level & l ) {
     log() << "Debugging rooms: " << std::endl;
-    for( vec4uint32 & r : l.rooms ) {
+    for( Room & r : l.rooms ) {
         log() << &r << "-" << r << std::endl;
     }
 }
@@ -83,16 +93,14 @@ void saveLevelPpm( const Level & level, const string & filename ) {
     ofstream ppmOut;
     ppmOut.open( filename.c_str(), std::ios_base::out | std::ios_base::binary );
     ppmOut << "P6\n" << level.dimension.x << " " << level.dimension.y << "\n255\n";
-    unsigned char white[3] { 255, 255, 255}; // rgb order
-    unsigned char lightGrey[3] { 192, 192, 192 };
-    unsigned char darkGrey[3] { 28, 28, 28 };
-    unsigned char black[3] { 0, 0, 0 };
+    static unsigned char darkGrey[3] { 28, 28, 28 };
+    static unsigned char black[3] { 0, 0, 0 };
 
     for( uint32_t y = 0 ; y < level.dimension.y ; ++y ) {
         for( uint32_t x = 0 ; x < level.dimension.x ; ++x ) {
-            if( level.tiles[ (y*level.dimension.x) + x ] ) {
-//                ppmOut.write( (const char*)white, 3 );
-                ppmOut.write( (const char*)lightGrey, 3 );
+            Room * r( level.tiles[ (y*level.dimension.x) + x ] );
+            if( r != nullptr ) {
+                ppmOut.write( (const char*)r->rgb, 3 );
             }
             else {
 //                ppmOut.write( (const char*)black, 3 );

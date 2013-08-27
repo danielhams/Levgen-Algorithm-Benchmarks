@@ -26,6 +26,8 @@
 #include "QuadTree.hpp"
 #include "OcclusionBuffer.hpp"
 
+/* #define BF_DEBUG */
+
 namespace level_generator
 {
 
@@ -41,17 +43,28 @@ class BruteForceGenerationStrategy : public GenerationStrategyBase {
         uint32_t x = ( (randGenerator_( gen ) % (configuration_.levelDimensionMinusOne.x - w)) + 1 );
         uint32_t y = ( (randGenerator_( gen ) % (configuration_.levelDimensionMinusOne.y - h)) + 1 );
 
-//        log() << roomDim << " constructed - will now check" << std::endl;
         vec4uint32 roomDim { x, y, w, h };
+#ifdef BF_DEBUG
+        log() << roomDim << " constructed - will now check" << std::endl;
+#endif
 
         if( !threadLocalGenerationHelper.isCollision( l, roomDim ) ) {
-//            log() << roomDim << " begin added" << std::endl;
-            l.rooms.emplace_back( roomDim );
+#ifdef BF_DEBUG
+            log() << roomDim << " begin added" << std::endl;
+#endif
+            uint8_t rgb[3];
+            rgb[0] = 64 + ( randGenerator_( gen ) % 128);
+            rgb[1] = 64 + ( randGenerator_( gen ) % 128);
+            rgb[2] = 64 + ( randGenerator_( gen ) % 128);
+
+            l.rooms.emplace_back( Room( gen, roomDim, rgb ) );
             threadLocalGenerationHelper.addRoom( &(l.rooms[ l.rooms.size() - 1 ]) );
             return true;
         }
         else {
-//            log() << roomDim << " COLLIDES - won't add." << std::endl;
+#ifdef BF_DEBUG
+            log() << roomDim << " COLLIDES - won't add." << std::endl;
+#endif
             return false;
         }
     };
@@ -66,11 +79,21 @@ public:
         threadLocalCollisionTester.clearForNewLevel();
         level.rooms.reserve( configuration_.numRooms );
         uint32_t numRoomsMade( 0 );
-        for( uint32_t ii = 0 ; ii < configuration_.maxRoomAttempts ; ++ii ) {
-//            debugRooms( level );
-            numRoomsMade += static_cast<uint32_t>( makeRoomSilentlyFail_( threadLocalCollisionTester, level, gen ) );
-            if( numRoomsMade >= configuration_.numRooms ) {
-                break;
+        uint32_t numAttempts( 0 );
+
+        while( numRoomsMade < configuration_.numRooms  ) {
+#ifdef BF_DEBUG
+            debugRooms( level );
+#endif
+            if( makeRoomSilentlyFail_( threadLocalCollisionTester, level, gen ) ) {
+                numRoomsMade++;
+                numAttempts = 0;
+            }
+            else {
+                numAttempts++;
+                if( numAttempts >= configuration_.maxRoomAttempts ) {
+                    break;
+                }
             }
         }
         level.fillTiles();

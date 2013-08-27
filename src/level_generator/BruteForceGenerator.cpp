@@ -54,7 +54,9 @@ bool FixedLevelQuadTreeThreadLocalHelper::isCollision( Level & l, const vec4uint
 }
 
 void FixedLevelQuadTreeThreadLocalHelper::addRoom( vec4uint32 * r ) {
-//        log() << "Adding room " << r << std::endl;
+#ifdef BF_DEBUG
+    log() << "Adding room " << r << std::endl;
+#endif
     quadTree_.insertContent( r );
 }
 

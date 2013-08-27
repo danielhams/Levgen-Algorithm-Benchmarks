@@ -331,7 +331,12 @@ public:
                 vec4uint32 newRoom = makePositionlessRoom_( seed );
                 if( helper.insertRoom( level, newRoom, seed ) ) {
                     roomsCreated++;
-                    level.rooms.push_back( newRoom );
+                    uint8_t rgb[3];
+                    rgb[0] = 64 + ( randGenerator_( seed ) % 128);
+                    rgb[1] = 64 + ( randGenerator_( seed ) % 128);
+                    rgb[2] = 64 + ( randGenerator_( seed ) % 128);
+
+                    level.rooms.push_back( Room( seed, newRoom, rgb ) );
                     if( roomsCreated >= configuration_.numRooms ) {
 #ifdef FL_DEBUG
                         log() << "Number of rooms satisfied" << std::endl;

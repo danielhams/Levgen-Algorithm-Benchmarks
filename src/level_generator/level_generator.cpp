@@ -48,6 +48,7 @@ using level_generator::CRandGenerator;
 using level_generator::GenRandGenerator;
 
 using level_generator::NumRoomsMetric;
+using level_generator::MinSpaceMetric;
 using level_generator::Level;
 using level_generator::LevelGeneratorConfiguration;
 using level_generator::LevelGenerator;
@@ -85,8 +86,8 @@ int main(int argc, char** argv)
         ("smallroom", po::value<int>(), "Minimum room size (> 3)")
         ("bigroom", po::value<int>(), "Maximum room size (N<=(min dim -2)")
         ("levels", po::value<int>(), "Number of levels to generate (1<=N<=5000)")
-        ("maxrooms", po::value<int>(), "Maximum number of rooms per level (1<=N<=100000)")
-        ("maxroomattempts", po::value<int>(), "Maximum number of attempts to create a room per level (1<=N<=100000)")
+        ("maxrooms", po::value<int>(), "Maximum number of rooms per level (1<=N<=200000)")
+        ("maxroomattempts", po::value<int>(), "Maximum number of attempts to create a room per level (1<=N<=1000000)")
         ("threads", po::value<int>(), "Number of threads (1<=N<=4)")
         ("seed", po::value<int>(), "Set the random number seed");
 
@@ -138,12 +139,12 @@ int main(int argc, char** argv)
                 showUsageSummary = true;
             }
             numRooms = vm["maxrooms"].as<int>();
-            if( numRooms < 1 || numRooms > 100000 )
+            if( numRooms < 1 || numRooms > 200000 )
             {
                 showUsageSummary = true;
             }
             maxRoomAttempts = vm["maxroomattempts"].as<int>();
-            if( maxRoomAttempts < 1 || maxRoomAttempts > 100000 )
+            if( maxRoomAttempts < 1 || maxRoomAttempts > 1000000 )
             {
                 showUsageSummary = true;
             }
@@ -205,6 +206,7 @@ int main(int argc, char** argv)
         log() << "LevelGeneratorConfiguration: " << lc << endl;
 
         NumRoomsMetric roomsMetric;
+//        MinSpaceMetric roomsMetric;
 
         CRandGenerator cRandGenerator;
         GenRandGenerator genRandGenerator;
@@ -216,6 +218,7 @@ int main(int argc, char** argv)
             Timer timer;
             timer.markBoundary( "Begin" );
 
+            /**/
             {
                 timer.markBoundary( "Begin genrand simple" );
                 BruteForceGenerationStrategy<GenRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceGenrandGenerationStrategy( lc, genRandGenerator );
@@ -266,7 +269,7 @@ int main(int argc, char** argv)
                 timer.markBoundary( "Save ppm" );
                 log() << "bf qt cr rooms " << cbfqtLevel.rooms.size() << std::endl;
             }
-
+            /**/
             {
                 timer.markBoundary( "Beginning genrand occlusion buffer" );
                 BruteForceGenerationStrategy<GenRandGenerator, OcclusionThreadLocalHelper> gbruteForceOcclusionBufferStrategy( lc, genRandGenerator );
