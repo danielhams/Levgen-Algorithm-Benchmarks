@@ -104,29 +104,35 @@ private:
 };
 
 class LogPrivateImpl {
+    const string & name_;
     static thread_specific_ptr<ThreadOutputStream> threadOutputStream_;
 public:
+    LogPrivateImpl( const string & name ) : name_( name ) {};
+
     ostream & operator()() {
         ThreadOutputStream * tos( threadOutputStream_.get() );
         if( tos == nullptr ) {
             tos = new ThreadOutputStream();
             threadOutputStream_.reset( tos );
         }
-        return (*tos) << boost::posix_time::microsec_clock::universal_time() << ' ' << format("%014s") % boost::this_thread::get_id() << ' ';
+        return (*tos) << boost::posix_time::microsec_clock::universal_time() <<
+                ' ' << format("%014s") % boost::this_thread::get_id() <<
+                " [ " << format("%-20.20s") % name_ << " ] ";
     };
 };
 
 thread_specific_ptr<ThreadOutputStream> LogPrivateImpl::threadOutputStream_;
 
-Log::Log() :
-    pimpl_( std::auto_ptr<LogPrivateImpl>( new LogPrivateImpl() ) ) {
+Log::Log( const std::string & name ) :
+        name_( name ),
+        pimpl_( std::auto_ptr<LogPrivateImpl>( new LogPrivateImpl( name_ ) ) ) {
 }
 
 std::ostream & Log::operator()() {
     return (*(pimpl_.get()))();
 }
 
-Log Timer::log;
+Log Timer::log("Timer");
 
 void Timer::markBoundary( const string & sectorName )
 {

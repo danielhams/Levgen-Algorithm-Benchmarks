@@ -23,12 +23,13 @@
 #define OCCLUSIONBUFFER_HPP_
 
 #include "GeneratorBase.hpp"
+#include "Utils.hpp"
 
 namespace level_generator
 {
 
 class OcclusionBuffer{
-
+    static Log log;
 public:
     std::vector<uint8_t> buffer;
     const vec2uint32 dimensions;
@@ -41,6 +42,8 @@ public:
     void occlude( const vec4uint32 & toOcclude );
 
     void clear();
+
+    void debug() const;
 };
 
 } /* namespace level_generator */

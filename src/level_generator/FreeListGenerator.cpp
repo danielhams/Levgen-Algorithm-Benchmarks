@@ -10,4 +10,6 @@
 namespace level_generator
 {
 
+Log FreeListSelectorBase::log("FreeListSelectorBase");
+
 } /* namespace level_generator */

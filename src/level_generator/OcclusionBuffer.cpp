@@ -20,13 +20,21 @@
  */
 
 #include <cstdint>
+#include <sstream>
 #include <vector>
 #include <algorithm>
 
 #include "OcclusionBuffer.hpp"
 
+/* #define OC_DEBUG */
+
 namespace level_generator
 {
+
+using std::endl;
+using std::stringstream;
+
+Log OcclusionBuffer::log("OcclusionBuffer");
 
 OcclusionBuffer::OcclusionBuffer( const vec2uint32 & dimensions ) :
         buffer(dimensions.x * dimensions.y),
@@ -45,6 +53,9 @@ bool OcclusionBuffer::isOccluded( const vec4uint32 & toTest ){
 }
 
 bool OcclusionBuffer::isExpandedOccluded( const vec4uint32 & toTest ){
+#ifdef OC_DEBUG
+    log() << "Asked to expanded occlude " << toTest << endl;
+#endif
     for( uint32_t y = toTest.y-1 ; y <= toTest.y + toTest.h ; ++y ) {
         for( uint32_t x = toTest.x-1 ; x <= toTest.x + toTest.w ; ++x ) {
             if( buffer[ (y*dimensions.x) + x ] ) {
@@ -56,6 +67,9 @@ bool OcclusionBuffer::isExpandedOccluded( const vec4uint32 & toTest ){
 }
 
 void OcclusionBuffer::occlude( const vec4uint32 & toTest ) {
+#ifdef OC_DEBUG
+    log() << "Asked to occlude " << toTest << endl;
+#endif
     for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
         for( uint32_t x = toTest.x ; x < toTest.x + toTest.w ; ++x ) {
             buffer[ (y*dimensions.x) + x ] = 1;
@@ -65,6 +79,20 @@ void OcclusionBuffer::occlude( const vec4uint32 & toTest ) {
 
 void OcclusionBuffer::clear(){
     std::fill( buffer.begin(), buffer.end(), 0 );
+}
+
+void OcclusionBuffer::debug() const {
+    stringstream ss( stringstream::out );
+    ss <<  "Buffer is currently:" << std::endl;
+    for( uint32_t y = 0 ; y < dimensions.y ; ++y ) {
+        for( uint32_t x = 0 ; x < dimensions.x ; ++x ) {
+            const uint8_t & val( buffer[ (dimensions.x * y) + x ] );
+            uint32_t iv( val );
+            ss << iv;
+        }
+        ss << std::endl;
+    }
+    log() << ss.str();
 }
 
 } /* namespace level_generator */

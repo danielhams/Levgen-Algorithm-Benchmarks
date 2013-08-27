@@ -22,6 +22,7 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#include <string>
 #include <iostream>
 #include <mutex>
 #include <vector>
@@ -36,11 +37,12 @@ class LogPrivateImpl;
 
 // Should be multi-threaded, but isn't and I didn't want to introduce another dependency
 class Log {
+    const std::string name_;
     std::auto_ptr<LogPrivateImpl> pimpl_;
     Log( const Log & );
     Log & operator=(const Log &);
 public:
-    Log();
+    Log( const std::string & name );
     std::ostream & operator()();
 };
 

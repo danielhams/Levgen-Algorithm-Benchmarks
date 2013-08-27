@@ -58,6 +58,7 @@ using level_generator::FixedLevelQuadTreeThreadLocalHelper;
 using level_generator::OcclusionThreadLocalHelper;
 
 using level_generator::FreeListMinSizeSelector;
+using level_generator::FreeListMaxSizeSelector;
 using level_generator::FreeListThreadLocalHelper;
 using level_generator::FreeListGenerationStrategy;
 
@@ -73,7 +74,7 @@ namespace level_generator
 int main(int argc, char** argv)
 {
     std::ios_base::sync_with_stdio( false );
-    Log log;
+    Log log("Main");
     log() << "level_generator beginning ver(" << version << ") abiVer(" << abiVersion << ")" << endl;
 
     po::options_description desc("Allowed options");
@@ -214,7 +215,7 @@ int main(int argc, char** argv)
 
             Timer timer;
             timer.markBoundary( "Begin" );
-            /*
+
             {
                 timer.markBoundary( "Begin genrand simple" );
                 BruteForceGenerationStrategy<GenRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceGenrandGenerationStrategy( lc, genRandGenerator );
@@ -291,19 +292,59 @@ int main(int argc, char** argv)
                 timer.markBoundary( "Save ppm" );
                 log() << "bf ob cr rooms " << cbfobLevel.rooms.size() << std::endl;
             }
-            */
+
             {
-                timer.markBoundary( "Beginning crand free list" );
+                timer.markBoundary( "Beginning genrand free list min size" );
+                typedef FreeListThreadLocalHelper<GenRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;
+                FreeListGenerationStrategy<GenRandGenerator, FreeListMinHelper> flgrStrategy( lc, genRandGenerator );
+                LevelGenerator<FreeListGenerationStrategy<GenRandGenerator, FreeListMinHelper>, FreeListMinHelper> flgrLevelGenerator( lc, flgrStrategy );
+                flgrLevelGenerator.generateLevels();
+                Level & flgrLevel( flgrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post Free List GenRand Min Size" );
+                saveLevelPpm( flgrLevel, "freelistgenrandmin.ppm" );
+                timer.markBoundary( "Save ppm" );
+                log() << "fl gr minsize rooms " << flgrLevel.rooms.size() << std::endl;
+            }
+
+            {
+                timer.markBoundary( "Beginning crand free list min size" );
                 typedef FreeListThreadLocalHelper<CRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;
                 FreeListGenerationStrategy<CRandGenerator, FreeListMinHelper> flcrStrategy( lc, cRandGenerator );
                 LevelGenerator<FreeListGenerationStrategy<CRandGenerator, FreeListMinHelper>, FreeListMinHelper> flcrLevelGenerator( lc, flcrStrategy );
                 flcrLevelGenerator.generateLevels();
                 Level & flcrLevel( flcrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post Free List CRand" );
-                saveLevelPpm( flcrLevel, "freelistcrand.ppm" );
+                timer.markBoundary( "Post Free List CRand Min Size" );
+                saveLevelPpm( flcrLevel, "freelistcrandmin.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "fl cr rooms " << flcrLevel.rooms.size() << std::endl;
+                log() << "fl cr minsize rooms " << flcrLevel.rooms.size() << std::endl;
             }
+
+            {
+                timer.markBoundary( "Beginning genrand free list max size" );
+                typedef FreeListThreadLocalHelper<GenRandGenerator, FreeListMaxSizeSelector> FreeListMaxHelper;
+                FreeListGenerationStrategy<GenRandGenerator, FreeListMaxHelper> flgrStrategy( lc, genRandGenerator );
+                LevelGenerator<FreeListGenerationStrategy<GenRandGenerator, FreeListMaxHelper>, FreeListMaxHelper> flgrLevelGenerator( lc, flgrStrategy );
+                flgrLevelGenerator.generateLevels();
+                Level & flgrLevel( flgrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post Free List GenRand Max Size" );
+                saveLevelPpm( flgrLevel, "freelistgenrandmax.ppm" );
+                timer.markBoundary( "Save ppm" );
+                log() << "fl gr maxsize rooms " << flgrLevel.rooms.size() << std::endl;
+            }
+
+            {
+                timer.markBoundary( "Beginning crand free list max size" );
+                typedef FreeListThreadLocalHelper<CRandGenerator, FreeListMaxSizeSelector> FreeListMaxHelper;
+                FreeListGenerationStrategy<CRandGenerator, FreeListMaxHelper> flcrStrategy( lc, cRandGenerator );
+                LevelGenerator<FreeListGenerationStrategy<CRandGenerator, FreeListMaxHelper>, FreeListMaxHelper> flcrLevelGenerator( lc, flcrStrategy );
+                flcrLevelGenerator.generateLevels();
+                Level & flcrLevel( flcrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post Free List CRand Max Size" );
+                saveLevelPpm( flcrLevel, "freelistcrandmax.ppm" );
+                timer.markBoundary( "Save ppm" );
+                log() << "fl cr maxsize rooms " << flcrLevel.rooms.size() << std::endl;
+            }
+
 
             timer.logTimes( "Time taken " );
         }

@@ -28,7 +28,7 @@ using std::string;
 using std::ostream;
 using std::ofstream;
 
-Log LevelGeneratorBase::log;
+Log LevelGeneratorBase::log("LevelGeneratorBase");
 
 ostream & operator<<( ostream & out, const vec2uint32 & vec2) {
     out << "(" << vec2.x << ", " << vec2.y << ")";
@@ -36,7 +36,9 @@ ostream & operator<<( ostream & out, const vec2uint32 & vec2) {
 }
 
 ostream & operator<<( ostream & out, const vec4uint32 & vec4) {
-    out << "(" << vec4.x << ", " << vec4.y << " [" << vec4.w << ", " << vec4.h << "])";
+//    out << "(" << vec4.x << ", " << vec4.y << " [" << vec4.w << ", " << vec4.h << "])";
+    out << "(" << vec4.x << ", " << vec4.y << ")->(" << (vec4.x + vec4.w) << ", " << (vec4.y + vec4.h) <<
+            ")[" << vec4.w << "w," << vec4.h << "h]";
     return out;
 }
 
@@ -66,7 +68,7 @@ void Level::fillTiles() {
     }
 };
 
-Log GenerationStrategyBase::log;
+Log GenerationStrategyBase::log("GenerationStrategyBase");
 
 void GenerationStrategyBase::debugRooms( Level & l ) {
     log() << "Debugging rooms: " << std::endl;
@@ -75,7 +77,7 @@ void GenerationStrategyBase::debugRooms( Level & l ) {
     }
 }
 
-Log GenerationThreadLocalHelperBase::log;
+Log GenerationThreadLocalHelperBase::log("GenerationThreadLocalHelperBase");
 
 void saveLevelPpm( const Level & level, const string & filename ) {
     ofstream ppmOut;

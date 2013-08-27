@@ -51,8 +51,8 @@ bool AABB::intersects( const vec4uint32 & r ) const {
     return std::abs(xdd) <= (dimensions.w + r.w) && std::abs(ydd) <= (dimensions.h + r.h);
 }
 
-Log QuadTreeNodeBase::log;
+Log QuadTreeNodeBase::log("QuadTreeNodeBase");
 
-Log QuadTreeBase::log;
+Log QuadTreeBase::log("QuadTreeBase");
 
 } /* namespace level_generator */
