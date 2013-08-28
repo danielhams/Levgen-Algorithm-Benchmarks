@@ -37,16 +37,15 @@ struct CRandGenerator
 
 struct XorRandGenerator
 {
-    uint32_t operator()( uint32_t & gen ) {
-        gen += gen;
-        gen ^= 1;
-        int32_t tgen=gen;
-        if ( tgen < 0) {
-            gen ^= 0x88888eef;
-        }
-        return gen;
+    uint32_t operator()( uint32_t & gen) {
+            gen ^= gen << 13;
+            gen ^= gen >> 17;
+            gen ^= gen << 5;
+            return gen;
     }
 };
+
+
 
 } /* namespace level_generator */
 #endif /* RANDGENERATORS_HPP_ */
