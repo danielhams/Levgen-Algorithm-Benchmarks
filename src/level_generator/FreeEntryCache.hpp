@@ -22,6 +22,7 @@ namespace level_generator
 class FreeEntryCache {
     const LevelGeneratorConfiguration & configuration_;
     static Log log;
+    bool previousSplitLeftHanded_;
 
     void insertFreeEntry_( const vec4uint32 & newFreeEntry );
     void floodFillRegion_( std::vector<uint8_t> & currentlyMarked, vec4uint32 & regionToFlood );

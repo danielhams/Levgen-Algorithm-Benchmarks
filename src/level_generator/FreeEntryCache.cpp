@@ -22,14 +22,15 @@ Log FreeEntryCache::log("FreeEntryCache");
 
 FreeEntryCache::FreeEntryCache( const LevelGeneratorConfiguration & configuration ) :
         numFreeEntries( 0 ),
-        configuration_( configuration ) {
+        configuration_( configuration ),
+        previousSplitLeftHanded_( true ) {
 };
 
 void FreeEntryCache::insertFreeEntry_( const vec4uint32 & newFreeEntry ) {
 
     if( newFreeEntry.w < configuration_.minroomsizeplustwo || newFreeEntry.h < configuration_.minroomsizeplustwo ) {
 #ifdef FEC_DEBUG
-        log() << "Attempted to insert free entry too small: " << newFreeEntry << std::endl;
+        log() << "Attempted to insert free entry too small: " << newFreeEntry << endl;
 #endif
         return;
     }
@@ -48,7 +49,7 @@ void FreeEntryCache::insertFreeEntry_( const vec4uint32 & newFreeEntry ) {
 
     if( wIter == xToYFreeEntryMap.end() || wIter->first != newFreeEntry.w ) {
 #ifdef FEC_DEBUG
-        log() << "XtoY entry map is empty for width " << newFreeEntry.w << std::endl;
+        log() << "XtoY entry map is empty for width " << newFreeEntry.w << endl;
 #endif
         std::pair<XToYFreeEntryMap::iterator, bool> ins = xToYFreeEntryMap.emplace( newFreeEntry.w, YToFreeEntryMap() );
         YToFreeEntryMap & yToEntryMap = (*(ins.first)).second;
@@ -58,7 +59,7 @@ void FreeEntryCache::insertFreeEntry_( const vec4uint32 & newFreeEntry ) {
     }
     else {
 #ifdef FEC_DEBUG
-        log() << "XtoY entry map found " << wIter->first << " width - will now search height" << std::endl;
+        log() << "XtoY entry map found " << wIter->first << " width - will now search height" << endl;
 #endif
 
         FreeEntryCache::YToFreeEntryMap::iterator hIter =
@@ -193,7 +194,7 @@ void FreeEntryCache::repopulateFloodFill( OcclusionBuffer & occlussionBuffer ) {
     vector<uint8_t> currentlyMarked( occlussionBuffer.buffer );
 
 #ifdef FEC_DEBUG
-    log() << "Asked to repopulate using flood fill. BEFORE FLOOD FILL" << std::endl;
+    log() << "Asked to repopulate using flood fill. BEFORE FLOOD FILL" << endl;
     printFloodBuffer( log, configuration_.levelDimension, currentlyMarked );
 #endif
 
@@ -243,12 +244,12 @@ void FreeEntryCache::repopulateFloodFill( OcclusionBuffer & occlussionBuffer ) {
                     // Check the X borders
                     for( uint32_t xmo = filledRegion.x - 1 ; xmo < (filledRegion.x + filledRegion.w + 1) ; ++xmo ) {
 #ifdef FEC_DEBUG
-                        log() << "Examing X borders at " << xmo << ",(" << (filledRegion.y - 1) << "/" << (filledRegion.y + filledRegion.h) << ")" << std::endl;
+                        log() << "Examing X borders at " << xmo << ",(" << (filledRegion.y - 1) << "/" << (filledRegion.y + filledRegion.h) << ")" << endl;
 #endif
                         if( currentlyMarked[ (configuration_.levelDimension.x * (filledRegion.y - 1) ) + xmo ] == 0 ||
                                 currentlyMarked[ (configuration_.levelDimension.x * (filledRegion.y + filledRegion.h )) + xmo ] == 0 ) {
 #ifdef FEC_DEBUG
-                            log() << "One of the X borders has empty" << std::endl;
+                            log() << "One of the X borders has empty" << endl;
 #endif
                             connected = true;
                             goto CONNECTIVITY_DONE;
@@ -257,12 +258,12 @@ void FreeEntryCache::repopulateFloodFill( OcclusionBuffer & occlussionBuffer ) {
                     // Check the Y borders
                     for( uint32_t ymo = filledRegion.y ; ymo < (filledRegion.y + filledRegion.h ) ; ++ymo ) {
 #ifdef FEC_DEBUG
-                        log() << "Examing Y borders at (" << (filledRegion.x - 1) << "/" << (filledRegion.x + filledRegion.w ) << ")," << ymo << std::endl;
+                        log() << "Examing Y borders at (" << (filledRegion.x - 1) << "/" << (filledRegion.x + filledRegion.w ) << ")," << ymo << endl;
 #endif
                         if( currentlyMarked[ (configuration_.levelDimension.x * ymo ) + filledRegion.x - 1 ] == 0 ||
                                 currentlyMarked[ (configuration_.levelDimension.x * ymo ) + (filledRegion.x + filledRegion.w) ] == 0 ) {
 #ifdef FEC_DEBUG
-                            log() << "One of the Y borders has empty" << std::endl;
+                            log() << "One of the Y borders has empty" << endl;
 #endif
                             connected = true;
                             goto CONNECTIVITY_DONE;
@@ -271,7 +272,7 @@ void FreeEntryCache::repopulateFloodFill( OcclusionBuffer & occlussionBuffer ) {
 CONNECTIVITY_DONE:
                     if( !connected ) {
 #ifdef FEC_DEBUG
-                        log() << "Region " << filledRegion << " is not connected and too small. Will marked checked" << std::endl;
+                        log() << "Region " << filledRegion << " is not connected and too small. Will marked checked" << endl;
 #endif
                         for( uint32_t my = filledRegion.y ; my < filledRegion.y + filledRegion.h ; ++my ) {
                             for( uint32_t mx = filledRegion.x ; mx < filledRegion.x + filledRegion.w ; ++mx ) {
@@ -285,7 +286,7 @@ CONNECTIVITY_DONE:
                     }
                     else {
 #ifdef FEC_DEBUG
-                        log() << "Region is still connected to free area. Leaving." << std::endl;
+                        log() << "Region is still connected to free area. Leaving." << endl;
 #endif
                     }
                 }
@@ -293,7 +294,7 @@ CONNECTIVITY_DONE:
         }
     }
 #ifdef FEC_DEBUG
-    log() << "AFTER FLOOD FILL" << std::endl;
+    log() << "AFTER FLOOD FILL" << endl;
     printFloodBuffer( log, configuration_.levelDimension, currentlyMarked );
 #endif
 };
@@ -305,7 +306,7 @@ void FreeEntryCache::useFreeEntry( FreeEntryIter & fe, const vec4uint32 & spaceU
     (fe.yIter)->second.erase( fe.entryListIter );
     numFreeEntries--;
 #ifdef FEC_DEBUG
-    log() << "Erased list entry" << std::endl;
+    log() << "Erased list entry" << endl;
 #endif
 
     // If the list is now empty, remove the yToFreeEntry
@@ -329,85 +330,92 @@ void FreeEntryCache::useFreeEntry( FreeEntryIter & fe, const vec4uint32 & spaceU
     log() << "Decomposing " << freeEntry << " with " << spaceUsed << endl;
 #endif
 
-    // Compute the four edge block sizes (not six, we'll try and preserve big spaces as much as we can)
+    // Compute the four edge block sizes (not six, we'll try and preserve big spaces and
+    // rotate between left or right handedness)
     // Like this:
-    // ^       **
+    // ^     **
     // |   ##BB__
-    // y       ++
+    // y     ++
     //     x ----->
 
-    // First the #
+    int32_t starHeight( spaceUsed.y - freeEntry.y );
     int32_t hashWidth( spaceUsed.x - freeEntry.x );
-    int32_t plusHeight( spaceUsed.y - freeEntry.y );
-    int32_t starHeight( freeEntry.h - (plusHeight + spaceUsed.h ) );
     int32_t usWidth( freeEntry.w - (hashWidth + spaceUsed.w) );
-
-    // Favour a split that doesn't leave very slim regions
-    // By looking at the original free entry dimensions
-    bool favourSplitOnHeight( freeEntry.h > freeEntry.w );
-
-    /**/
-    // Alternate between high and wide merges
-    if( favourSplitOnHeight ) {
-        if( plusHeight > 0 ) {
-            vec4uint32 hash{ freeEntry.x, freeEntry.y, freeEntry.w, (uint32_t)plusHeight };
+    int32_t plusHeight( freeEntry.h - (starHeight + spaceUsed.h) );
 #ifdef FEC_DEBUG
-            log() << "IFE W1 full width plus" << std::endl;
+    log() << "HW(" << hashWidth << ") PH(" << plusHeight << ") SH(" << starHeight << ") UW(" << usWidth << ")" << endl;
+#endif
+
+    if( previousSplitLeftHanded_ ) {
+        // Go right handed (start extends to right etc)
+        if( starHeight > 0 ) {
+            vec4uint32 hash{ freeEntry.x + hashWidth, freeEntry.y, freeEntry.w - hashWidth, (uint32_t)starHeight };
+#ifdef FEC_DEBUG
+            log() << "IFE RH ST" << endl;
 #endif
             insertFreeEntry_( hash );
         }
 
-        if( starHeight > 0 ) {
-            vec4uint32 hash{ freeEntry.x, freeEntry.y + plusHeight + spaceUsed.h, freeEntry.w, (uint32_t)starHeight };
+        if( usWidth > 0 ) {
+            vec4uint32 hash{ freeEntry.x + hashWidth + spaceUsed.w, freeEntry.y + starHeight, (uint32_t)usWidth, spaceUsed.h + plusHeight };
 #ifdef FEC_DEBUG
-            log() << "IFE W2 full width star" << std::endl;
+            log() << "IFE RH US" << endl;
+#endif
+            insertFreeEntry_( hash );
+        }
+
+        if( plusHeight > 0 ) {
+            vec4uint32 hash{ freeEntry.x,
+                freeEntry.y + starHeight + spaceUsed.h,
+                hashWidth + spaceUsed.w,
+                (uint32_t)plusHeight };
+#ifdef FEC_DEBUG
+            log() << "IFE RH PL" << endl;
 #endif
             insertFreeEntry_( hash );
         }
 
         if( hashWidth > 0 ) {
-            vec4uint32 hash{ freeEntry.x, freeEntry.y + plusHeight, (uint32_t)hashWidth, spaceUsed.h };
+            vec4uint32 hash{ freeEntry.x, freeEntry.y, (uint32_t)hashWidth, starHeight + spaceUsed.h };
 #ifdef FEC_DEBUG
-            log() << "IFE W3 small hash" << std::endl;
-#endif
-            insertFreeEntry_( hash );
-        }
-        if( usWidth > 0 ) {
-            vec4uint32 hash{ freeEntry.x + hashWidth + spaceUsed.w, freeEntry.y + plusHeight, (uint32_t)usWidth, spaceUsed.h };
-#ifdef FEC_DEBUG
-            log() << "IFE W4 small underscore" << std::endl;
+            log() << "IFE RH HS" << endl;
 #endif
             insertFreeEntry_( hash );
         }
     }
     else {
-        if( hashWidth > 0 ) {
-            vec4uint32 hash{ freeEntry.x, freeEntry.y, (uint32_t)hashWidth, freeEntry.h };
+        // Go left handed (start extends to left etc)
+        if( starHeight > 0 ) {
+            vec4uint32 hash{ freeEntry.x, freeEntry.y, hashWidth + spaceUsed.w, (uint32_t)starHeight };
 #ifdef FEC_DEBUG
-            log() << "IFE H1 full height hash" << std::endl;
+            log() << "IFE LH ST" << endl;
 #endif
             insertFreeEntry_( hash );
         }
 
         if( usWidth > 0 ) {
-            vec4uint32 hash{ freeEntry.x + hashWidth + spaceUsed.w, freeEntry.y, (uint32_t)usWidth, freeEntry.h };
+            vec4uint32 hash{ freeEntry.x + hashWidth + spaceUsed.w, freeEntry.y, (uint32_t)usWidth, starHeight + spaceUsed.h };
 #ifdef FEC_DEBUG
-            log() << "IFE H2 full height underscore" << std::endl;
+            log() << "IFE LH US" << endl;
 #endif
             insertFreeEntry_( hash );
         }
 
         if( plusHeight > 0 ) {
-            vec4uint32 hash{ freeEntry.x + hashWidth, freeEntry.y, spaceUsed.w, (uint32_t)plusHeight };
+            vec4uint32 hash{ freeEntry.x + hashWidth,
+                freeEntry.y + starHeight + spaceUsed.h,
+                spaceUsed.w + usWidth,
+                (uint32_t)plusHeight };
 #ifdef FEC_DEBUG
-            log() << "IFE H3 small plus" << std::endl;
+            log() << "IFE LH PL" << endl;
 #endif
             insertFreeEntry_( hash );
         }
-        if( starHeight > 0 ) {
-            vec4uint32 hash{ freeEntry.x + hashWidth, freeEntry.y + plusHeight + spaceUsed.h, spaceUsed.w, (uint32_t)starHeight };
+
+        if( hashWidth > 0 ) {
+            vec4uint32 hash{ freeEntry.x, freeEntry.y + starHeight, (uint32_t)hashWidth, spaceUsed.h + plusHeight };
 #ifdef FEC_DEBUG
-            log() << "IFE H4 small star" << std::endl;
+            log() << "IFE LH HS" << endl;
 #endif
             insertFreeEntry_( hash );
         }
@@ -417,6 +425,8 @@ void FreeEntryCache::useFreeEntry( FreeEntryIter & fe, const vec4uint32 & spaceU
     log() << "After use of free entry, cache contains:" << endl;
     debugFreeEntries();
 #endif
+
+    previousSplitLeftHanded_ = !previousSplitLeftHanded_;
 };
 
 void FreeEntryCache::debugFreeEntries() {
