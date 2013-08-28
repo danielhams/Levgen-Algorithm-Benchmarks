@@ -222,7 +222,7 @@ public:
         return freeEntryCache_.numFreeEntries;
     }
 
-    bool insertRoom( Level & level, vec4uint32 & newRoom, uint32_t & seed ) {
+    bool canInsertRoom( Level & level, vec4uint32 & newRoom, uint32_t & seed ) {
 #ifdef FL_DEBUG
         log() << "Attempting room insert of " << newRoom << std::endl;
 #endif
@@ -328,21 +328,34 @@ public:
 
         while( spaceAvailable ) {
             while( spaceAvailable ) {
-                vec4uint32 newRoom = makePositionlessRoom_( seed );
-                if( helper.insertRoom( level, newRoom, seed ) ) {
+                vec4uint32 newRoomDimensions = makePositionlessRoom_( seed );
+                if( helper.canInsertRoom( level, newRoomDimensions, seed ) ) {
+#ifdef FL_DEBUG
+                    log() << "Inserting room " << roomsCreated << std::endl;
+#endif
                     roomsCreated++;
                     uint8_t rgb[3];
                     rgb[0] = 64 + ( randGenerator_( seed ) % 128);
                     rgb[1] = 64 + ( randGenerator_( seed ) % 128);
                     rgb[2] = 64 + ( randGenerator_( seed ) % 128);
 
-                    level.rooms.push_back( Room( seed, newRoom, rgb ) );
+                    level.rooms.emplace_back( seed, newRoomDimensions, rgb );
+
                     if( roomsCreated >= configuration_.numRooms ) {
 #ifdef FL_DEBUG
                         log() << "Number of rooms satisfied" << std::endl;
 #endif
                         goto DONE;
                     }
+                    attempts = 0;
+
+//                    // Compact every ten rooms placed
+//                    if( roomsCreated % 10 == 0 ) {
+//#ifdef FL_DEBUG
+//                        log() << "Hit insert limit - falling out to compaction" << std::endl;
+//#endif
+//                        break;
+//                    }
                 }
                 else {
                     attempts++;
@@ -356,6 +369,9 @@ public:
                 spaceAvailable = helper.hasFreeSpace();
             }
             // Exhausted current free lists, compact free space using flood fill
+#ifdef FL_DEBUG
+                log() << "Compacting free space" << std::endl;
+#endif
             spaceAvailable = helper.computeFreeLists();
         }
 #ifdef FL_DEBUG

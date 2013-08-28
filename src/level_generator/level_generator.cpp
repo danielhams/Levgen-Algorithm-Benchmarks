@@ -45,7 +45,7 @@ using level_generator::Timer;
 using level_generator::saveLevelPpm;
 
 using level_generator::CRandGenerator;
-using level_generator::GenRandGenerator;
+using level_generator::XorRandGenerator;
 
 using level_generator::NumRoomsMetric;
 using level_generator::MinSpaceMetric;
@@ -53,6 +53,7 @@ using level_generator::Level;
 using level_generator::LevelGeneratorConfiguration;
 using level_generator::LevelGenerator;
 
+using level_generator::OrigBruteForceGenerationStrategy;
 using level_generator::BruteForceGenerationStrategy;
 using level_generator::SimpleCollisionThreadLocalHelper;
 using level_generator::FixedLevelQuadTreeThreadLocalHelper;
@@ -70,6 +71,13 @@ const string abiVersion( ABI_VERSION );
 
 namespace level_generator
 {
+}
+
+NumRoomsMetric maxRoomsMetric;
+MinSpaceMetric minSpaceMetric;
+
+void logLevelStats( Log & log, const std::string & preamble, const Level & l ) {
+    log() << preamble << " numRooms(" << l.rooms.size() << ") spaceCount(" << minSpaceMetric.countSpaceForLevel( l ) << ")" << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -124,12 +132,12 @@ int main(int argc, char** argv)
                 showUsageSummary = true;
             }
             minroomsize = vm["smallroom"].as<int>();
-            if( minroomsize < 1 || minroomsize > 100 )
+            if( minroomsize < 1 || minroomsize > 1000 )
             {
                 showUsageSummary = true;
             }
             maxroomsize = vm["bigroom"].as<int>();
-            if( maxroomsize < 1 || maxroomsize > 100 )
+            if( maxroomsize < 1 || maxroomsize > 1000 )
             {
                 showUsageSummary = true;
             }
@@ -205,11 +213,11 @@ int main(int argc, char** argv)
 
         log() << "LevelGeneratorConfiguration: " << lc << endl;
 
-        NumRoomsMetric roomsMetric;
-//        MinSpaceMetric roomsMetric;
+//        auto & roomsMetric( maxRoomsMetric );
+        auto & roomsMetric( minSpaceMetric );
 
         CRandGenerator cRandGenerator;
-        GenRandGenerator genRandGenerator;
+        XorRandGenerator xorRandGenerator;
 
         bool focusOnFreeList( false );
 
@@ -218,136 +226,150 @@ int main(int argc, char** argv)
             Timer timer;
             timer.markBoundary( "Begin" );
 
-            /**/
+            /*
             {
-                timer.markBoundary( "Begin genrand simple" );
-                BruteForceGenerationStrategy<GenRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceGenrandGenerationStrategy( lc, genRandGenerator );
-                LevelGenerator<BruteForceGenerationStrategy<GenRandGenerator, SimpleCollisionThreadLocalHelper>, SimpleCollisionThreadLocalHelper>
-                    bfgrLevelGenerator( lc, bruteForceGenrandGenerationStrategy );
-                bfgrLevelGenerator.generateLevels();
-                Level & bfgrLevel( bfgrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post BruteForce SimpleCT GenRand" );
-                saveLevelPpm( bfgrLevel, "bruteforcesimplectgenrand.ppm" );
+                timer.markBoundary( "Begin brute force simple xor" );
+                BruteForceGenerationStrategy<XorRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceXorGenerationStrategy( lc, xorRandGenerator );
+                LevelGenerator<BruteForceGenerationStrategy<XorRandGenerator, SimpleCollisionThreadLocalHelper>, SimpleCollisionThreadLocalHelper>
+                    bfxLevelGenerator( lc, bruteForceXorGenerationStrategy );
+                bfxLevelGenerator.generateLevels();
+                Level & bfxLevel( bfxLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post BruteForce SimpleCT Xor" );
+                saveLevelPpm( bfxLevel, "bruteforcesimplectxor.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "bf gr rooms " << bfgrLevel.rooms.size() << std::endl;
+                logLevelStats( log, "bf sc xor", bfxLevel );
             }
 
             {
-                timer.markBoundary( "Beginning crand simple" );
+                timer.markBoundary( "Beginning brute force simple crand" );
                 BruteForceGenerationStrategy<CRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceCrandGenerationStrategy( lc, cRandGenerator );
-                LevelGenerator<BruteForceGenerationStrategy<CRandGenerator, SimpleCollisionThreadLocalHelper>, SimpleCollisionThreadLocalHelper > bfcrLevelGenerator( lc, bruteForceCrandGenerationStrategy );
-                bfcrLevelGenerator.generateLevels();
-                Level & bfcrLevel( bfcrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                LevelGenerator<BruteForceGenerationStrategy<CRandGenerator, SimpleCollisionThreadLocalHelper>, SimpleCollisionThreadLocalHelper > bfcLevelGenerator( lc, bruteForceCrandGenerationStrategy );
+                bfcLevelGenerator.generateLevels();
+                Level & bfcLevel( bfcLevelGenerator.pickLevelByCriteria( roomsMetric ) );
                 timer.markBoundary( "Post BruteForce SimpleCT CRand" );
-                saveLevelPpm( bfcrLevel, "bruteforcesimplectcrand.ppm" );
+                saveLevelPpm( bfcLevel, "bruteforcesimplectcrand.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "bf cr rooms " << bfcrLevel.rooms.size() << std::endl;
+                logLevelStats( log, "bf sc cr", bfcLevel );
             }
 
             {
-                timer.markBoundary( "Beginning genrand quadtree" );
-                BruteForceGenerationStrategy<GenRandGenerator, FixedLevelQuadTreeThreadLocalHelper> bruteForceQuadTreeStrategy( lc, genRandGenerator );
-                LevelGenerator<BruteForceGenerationStrategy<GenRandGenerator, FixedLevelQuadTreeThreadLocalHelper>, FixedLevelQuadTreeThreadLocalHelper>
-                    bfqtLevelGenerator( lc, bruteForceQuadTreeStrategy );
-                bfqtLevelGenerator.generateLevels();
-                Level & bfqtLevel( bfqtLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post BruteForce QuadTree GenRand" );
-                saveLevelPpm( bfqtLevel, "bruteforcefixedquadtreegenrand.ppm" );
+                timer.markBoundary( "Beginning brute force quadtree xor" );
+                BruteForceGenerationStrategy<XorRandGenerator, FixedLevelQuadTreeThreadLocalHelper> bruteForceQuadTreeXorStrategy( lc, xorRandGenerator );
+                LevelGenerator<BruteForceGenerationStrategy<XorRandGenerator, FixedLevelQuadTreeThreadLocalHelper>, FixedLevelQuadTreeThreadLocalHelper>
+                    bfqtxLevelGenerator( lc, bruteForceQuadTreeXorStrategy );
+                bfqtxLevelGenerator.generateLevels();
+                Level & bfqtxLevel( bfqtxLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post BruteForce QuadTree Xor" );
+                saveLevelPpm( bfqtxLevel, "bruteforcefixedquadtreexor.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "bf qt gr rooms " << bfqtLevel.rooms.size() << std::endl;
+                logLevelStats( log, "bf qt xor", bfqtxLevel );
             }
 
             {
-                timer.markBoundary( "Beginning crand quadtree" );
-                BruteForceGenerationStrategy<CRandGenerator, FixedLevelQuadTreeThreadLocalHelper> cbruteForceQuadTreeStrategy( lc, cRandGenerator );
+                timer.markBoundary( "Beginning brute force quadtree crand" );
+                BruteForceGenerationStrategy<CRandGenerator, FixedLevelQuadTreeThreadLocalHelper> bruteForceQuadTreeCrandStrategy( lc, cRandGenerator );
                 LevelGenerator<BruteForceGenerationStrategy<CRandGenerator, FixedLevelQuadTreeThreadLocalHelper>, FixedLevelQuadTreeThreadLocalHelper>
-                    cbfqtLevelGenerator( lc, cbruteForceQuadTreeStrategy );
-                cbfqtLevelGenerator.generateLevels();
-                Level & cbfqtLevel( cbfqtLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                    bfqtcLevelGenerator( lc, bruteForceQuadTreeCrandStrategy );
+                bfqtcLevelGenerator.generateLevels();
+                Level & bfqtcLevel( bfqtcLevelGenerator.pickLevelByCriteria( roomsMetric ) );
                 timer.markBoundary( "Post BruteForce QuadTree CRand" );
-                saveLevelPpm( cbfqtLevel, "bruteforcefixedquadtreecrand.ppm" );
+                saveLevelPpm( bfqtcLevel, "bruteforcefixedquadtreecrand.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "bf qt cr rooms " << cbfqtLevel.rooms.size() << std::endl;
+                logLevelStats( log, "bf qt cr", bfqtcLevel );
+            }
+
+            {
+                timer.markBoundary( "Beginning brute force occlusion buffer xor" );
+                BruteForceGenerationStrategy<XorRandGenerator, OcclusionThreadLocalHelper> bruteForceOcclusionBufferXorStrategy( lc, xorRandGenerator );
+                LevelGenerator<BruteForceGenerationStrategy<XorRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
+                    bfobxLevelGenerator( lc, bruteForceOcclusionBufferXorStrategy );
+                bfobxLevelGenerator.generateLevels();
+                Level & bfobxLevel( bfobxLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post BruteForce Occlusion Buffer Xor" );
+                saveLevelPpm( bfobxLevel, "bruteforceocclusionbufferxor.ppm" );
+                timer.markBoundary( "Save ppm" );
+                logLevelStats( log, "bf ob xor", bfobxLevel );
             }
             /**/
-            {
-                timer.markBoundary( "Beginning genrand occlusion buffer" );
-                BruteForceGenerationStrategy<GenRandGenerator, OcclusionThreadLocalHelper> gbruteForceOcclusionBufferStrategy( lc, genRandGenerator );
-                LevelGenerator<BruteForceGenerationStrategy<GenRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
-                    gbfobLevelGenerator( lc, gbruteForceOcclusionBufferStrategy );
-                gbfobLevelGenerator.generateLevels();
-                Level & gbfobLevel( gbfobLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post BruteForce Occlussion Buffer GenRand" );
-                saveLevelPpm( gbfobLevel, "bruteforceocclusionbuffergenrand.ppm" );
-                timer.markBoundary( "Save ppm" );
-                log() << "bf ob gr rooms " << gbfobLevel.rooms.size() << std::endl;
-            }
 
             {
-                timer.markBoundary( "Beginning crand occlusion buffer" );
-                BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper> cbruteForceOcclusionBufferStrategy( lc, cRandGenerator );
+                timer.markBoundary( "Beginning brute force occlusion buffer crand" );
+                BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper> bruteForceOcclusionBufferCrandStrategy( lc, cRandGenerator );
                 LevelGenerator<BruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
-                    cbfobLevelGenerator( lc, cbruteForceOcclusionBufferStrategy );
-                cbfobLevelGenerator.generateLevels();
-                Level & cbfobLevel( cbfobLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post BruteForce Occlussion Buffer CRand" );
-                saveLevelPpm( cbfobLevel, "bruteforceocclusionbuffercrand.ppm" );
+                    bfobcLevelGenerator( lc, bruteForceOcclusionBufferCrandStrategy );
+                bfobcLevelGenerator.generateLevels();
+                Level & bfobcLevel( bfobcLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post BruteForce Occlusion Buffer CRand" );
+                saveLevelPpm( bfobcLevel, "bruteforceocclusionbuffercrand.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "bf ob cr rooms " << cbfobLevel.rooms.size() << std::endl;
+                logLevelStats( log, "bf ob cr", bfobcLevel );
             }
 
             {
-                timer.markBoundary( "Beginning genrand free list min size" );
-                typedef FreeListThreadLocalHelper<GenRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;
-                FreeListGenerationStrategy<GenRandGenerator, FreeListMinHelper> flgrStrategy( lc, genRandGenerator );
-                LevelGenerator<FreeListGenerationStrategy<GenRandGenerator, FreeListMinHelper>, FreeListMinHelper> flgrLevelGenerator( lc, flgrStrategy );
+                timer.markBoundary( "Begin original brute force occlusion buffer crand" );
+                OrigBruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper> obruteForceCrandGenerationStrategy( lc, cRandGenerator );
+                LevelGenerator<OrigBruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper>, OcclusionThreadLocalHelper>
+                    obfcLevelGenerator( lc, obruteForceCrandGenerationStrategy );
+                obfcLevelGenerator.generateLevels();
+                Level & obfcLevel( obfcLevelGenerator.pickLevelByCriteria( roomsMetric ) );
+                timer.markBoundary( "Post Orig BruteForce Occlusion Buffer CRand" );
+                saveLevelPpm( obfcLevel, "origbruteforceocclusionbuffercrand.ppm" );
+                timer.markBoundary( "Save ppm" );
+                logLevelStats( log, "obf ob cr", obfcLevel );
+            }
+
+            {
+                timer.markBoundary( "Beginning free list min size xor" );
+                typedef FreeListThreadLocalHelper<XorRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;
+                FreeListGenerationStrategy<XorRandGenerator, FreeListMinHelper> flgrStrategy( lc, xorRandGenerator );
+                LevelGenerator<FreeListGenerationStrategy<XorRandGenerator, FreeListMinHelper>, FreeListMinHelper> flgrLevelGenerator( lc, flgrStrategy );
                 flgrLevelGenerator.generateLevels();
                 Level & flgrLevel( flgrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post Free List GenRand Min Size" );
-                saveLevelPpm( flgrLevel, "freelistgenrandmin.ppm" );
+                timer.markBoundary( "Post Free List Min Size Xor" );
+                saveLevelPpm( flgrLevel, "freelistminxor.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "fl gr minsize rooms " << flgrLevel.rooms.size() << std::endl;
+                logLevelStats( log, "fl minsize xor", flgrLevel );
             }
 
             {
-                timer.markBoundary( "Beginning crand free list min size" );
+                timer.markBoundary( "Beginning free list min size crand" );
                 typedef FreeListThreadLocalHelper<CRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;
                 FreeListGenerationStrategy<CRandGenerator, FreeListMinHelper> flcrStrategy( lc, cRandGenerator );
                 LevelGenerator<FreeListGenerationStrategy<CRandGenerator, FreeListMinHelper>, FreeListMinHelper> flcrLevelGenerator( lc, flcrStrategy );
                 flcrLevelGenerator.generateLevels();
                 Level & flcrLevel( flcrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post Free List CRand Min Size" );
-                saveLevelPpm( flcrLevel, "freelistcrandmin.ppm" );
+                timer.markBoundary( "Post Free List Min Size CRand" );
+                saveLevelPpm( flcrLevel, "freelistmincrand.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "fl cr minsize rooms " << flcrLevel.rooms.size() << std::endl;
+                logLevelStats( log, "fl minsize crand", flcrLevel );
             }
 
             {
-                timer.markBoundary( "Beginning genrand free list max size" );
-                typedef FreeListThreadLocalHelper<GenRandGenerator, FreeListMaxSizeSelector> FreeListMaxHelper;
-                FreeListGenerationStrategy<GenRandGenerator, FreeListMaxHelper> flgrStrategy( lc, genRandGenerator );
-                LevelGenerator<FreeListGenerationStrategy<GenRandGenerator, FreeListMaxHelper>, FreeListMaxHelper> flgrLevelGenerator( lc, flgrStrategy );
+                timer.markBoundary( "Beginning free list max size xor" );
+                typedef FreeListThreadLocalHelper<XorRandGenerator, FreeListMaxSizeSelector> FreeListMaxHelper;
+                FreeListGenerationStrategy<XorRandGenerator, FreeListMaxHelper> flgrStrategy( lc, xorRandGenerator );
+                LevelGenerator<FreeListGenerationStrategy<XorRandGenerator, FreeListMaxHelper>, FreeListMaxHelper> flgrLevelGenerator( lc, flgrStrategy );
                 flgrLevelGenerator.generateLevels();
                 Level & flgrLevel( flgrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post Free List GenRand Max Size" );
-                saveLevelPpm( flgrLevel, "freelistgenrandmax.ppm" );
+                timer.markBoundary( "Post Free List Max Size Xor" );
+                saveLevelPpm( flgrLevel, "freelistmaxxor.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "fl gr maxsize rooms " << flgrLevel.rooms.size() << std::endl;
+                logLevelStats( log, "fl maxsize xor", flgrLevel );
             }
+            /**/
 
             {
-                timer.markBoundary( "Beginning crand free list max size" );
+                timer.markBoundary( "Beginning free list max size crand" );
                 typedef FreeListThreadLocalHelper<CRandGenerator, FreeListMaxSizeSelector> FreeListMaxHelper;
                 FreeListGenerationStrategy<CRandGenerator, FreeListMaxHelper> flcrStrategy( lc, cRandGenerator );
                 LevelGenerator<FreeListGenerationStrategy<CRandGenerator, FreeListMaxHelper>, FreeListMaxHelper> flcrLevelGenerator( lc, flcrStrategy );
                 flcrLevelGenerator.generateLevels();
                 Level & flcrLevel( flcrLevelGenerator.pickLevelByCriteria( roomsMetric ) );
-                timer.markBoundary( "Post Free List CRand Max Size" );
-                saveLevelPpm( flcrLevel, "freelistcrandmax.ppm" );
+                timer.markBoundary( "Post Free List Max Size CRand" );
+                saveLevelPpm( flcrLevel, "freelistmaxcrand.ppm" );
                 timer.markBoundary( "Save ppm" );
-                log() << "fl cr maxsize rooms " << flcrLevel.rooms.size() << std::endl;
+                logLevelStats( log, "fl maxsize crand", flcrLevel );
             }
-
 
             timer.logTimes( "Time taken " );
         }

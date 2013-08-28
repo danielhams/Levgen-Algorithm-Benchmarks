@@ -104,7 +104,7 @@ class LevelGenerator : LevelGeneratorBase
     void generateLevelsForPartition_( uint32_t seed, const uint32_t partitionStartIndex, const uint32_t partitionEndIndex ) {
         ThreadLocalGenerationHelper threadLocalGenerationHelper( generationStrategy_.newThreadLocalHelper() );
 
-        log() << "Would generate with seed " << seed << " levels(" << partitionStartIndex << "->" << partitionEndIndex << ")" << std::endl;
+//        log() << "Would generate with seed " << seed << " levels(" << partitionStartIndex << "->" << partitionEndIndex << ")" << std::endl;
         for( uint32_t i = partitionStartIndex ; i < partitionEndIndex ; i++ ) {
             Level & l( levels_[i] );
             generationStrategy_.fillLevel( threadLocalGenerationHelper, l, seed );
@@ -187,19 +187,19 @@ struct NumRoomsMetric {
 };
 
 struct MinSpaceMetric {
+    inline uint32_t countSpaceForLevel( const Level & l ) {
+        uint32_t spaceCount( 0 );
+        for( uint32_t i ; i < l.tiles.size() ; ++i ) {
+            if( l.tiles[i] == nullptr ) {
+                spaceCount++;
+            }
+        }
+        return spaceCount;
+    }
+
     inline bool compare( const Level & x, const Level & y ) {
-        uint32_t ySpaceCount( 0 );
-        for( uint32_t i ; i < y.tiles.size() ; ++i ) {
-            if( y.tiles[i] != nullptr ) {
-                ySpaceCount++;
-            }
-        }
-        uint32_t xSpaceCount( 0 );
-        for( uint32_t i ; i < x.tiles.size() ; ++i ) {
-            if( x.tiles[i] != nullptr ) {
-                xSpaceCount++;
-            }
-        }
+        uint32_t ySpaceCount( countSpaceForLevel( y ) );
+        uint32_t xSpaceCount( countSpaceForLevel( x ) );
         return ySpaceCount < xSpaceCount;
     }
 };

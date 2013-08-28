@@ -35,7 +35,7 @@ struct CRandGenerator
     }
 };
 
-struct GenRandGenerator
+struct XorRandGenerator
 {
     uint32_t operator()( uint32_t & gen ) {
         gen += gen;

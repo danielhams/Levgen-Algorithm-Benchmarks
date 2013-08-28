@@ -96,7 +96,7 @@ void FreeEntryCache::floodFillRegion_( std::vector<uint8_t> & currentlyMarked, v
     while( advancingX || advancingY ) {
         if( advancingX ) {
             uint32_t curX( floodRegion.x + floodRegion.w );
-            if( curX < configuration_.levelDimension.x ) {
+            if( curX < configuration_.levelDimensionMinusOne.x ) {
                 for( uint32_t testY = floodRegion.y ; testY < (floodRegion.y + floodRegion.h) ; ++testY ) {
 #ifdef FEC_DEBUG
                     log() << "Advancing X checking " << curX << " " << testY << endl;
@@ -106,24 +106,14 @@ void FreeEntryCache::floodFillRegion_( std::vector<uint8_t> & currentlyMarked, v
                         log() << "Advancing X hit filled point " << endl;
 #endif
                         advancingX = false;
-                        if( floodRegion.w < configuration_.minroomsize ) {
-#ifdef FEC_DEBUG
-                                log() << "Not advancing X and region isn't wide enough" << endl;
-#endif
-                            return;
-                        }
                         break;
                     }
                 }
             }
             else {
                 advancingX = false;
-                if( floodRegion.w < configuration_.minroomsize ) {
-#ifdef FEC_DEBUG
-                        log() << "Not advancing X and region isn't wide enough" << endl;
-#endif
-                    return;
-                }
+                floodRegion.w--;
+                break;
             }
 
             if( advancingX ) {
@@ -133,7 +123,7 @@ void FreeEntryCache::floodFillRegion_( std::vector<uint8_t> & currentlyMarked, v
 
         if( advancingY ) {
             uint32_t curY( floodRegion.y + floodRegion.h );
-            if( curY < configuration_.levelDimension.y ) {
+            if( curY < configuration_.levelDimensionMinusOne.y ) {
                 for( uint32_t testX = floodRegion.x ; testX < (floodRegion.x + floodRegion.w) ; ++testX ) {
 #ifdef FEC_DEBUG
                     log() << "Advancing Y checking " << testX << " " << curY << endl;
@@ -143,23 +133,14 @@ void FreeEntryCache::floodFillRegion_( std::vector<uint8_t> & currentlyMarked, v
                         log() << "Advancing Y hit filled point " << endl;
 #endif
                         advancingY = false;
-                        if( floodRegion.h < configuration_.minroomsize ) {
-#ifdef FEC_DEBUG
-                                log() << "Not advancing Y and region isn't wide enough" << endl;
-#endif
-                            return;
-                        }
+                        break;
                     }
                 }
             }
             else {
                 advancingY = false;
-                if( floodRegion.h < configuration_.minroomsize ) {
-#ifdef FEC_DEBUG
-                        log() << "Not advancing Y and region isn't wide enough" << endl;
-#endif
-                    return;
-                }
+                floodRegion.h--;
+                break;
             }
 
             if( advancingY ) {
@@ -174,6 +155,7 @@ void FreeEntryCache::floodFillRegion_( std::vector<uint8_t> & currentlyMarked, v
 #ifdef FEC_DEBUG
     log() << "After flood fill, region is " << floodRegion << endl;
 #endif
+
 }
 
 void FreeEntryCache::clearToDimensions( const vec4uint32 & freeArea ) {
@@ -228,9 +210,50 @@ void FreeEntryCache::repopulateFloodFill( const OcclusionBuffer & occlussionBuff
                     insertFreeEntry_( filledRegion );
                 }
                 else {
+                    // If the region found is too thin or too short check if it's unconnected
+                    // If it is,
 #ifdef FEC_DEBUG
-                    log() << "Region not large enough. Skipping adding it" << endl;
+                    log() << "Region not large enough. Checking if unconnected" << endl;
 #endif
+                    bool connected( false );
+                    // Check the X borders
+                    for( uint32_t xmo = filledRegion.x - 1 ; xmo < (filledRegion.x + filledRegion.w + 1) ; ++xmo ) {
+#ifdef FEC_DEBUG
+                        log() << "Examing X borders at " << xmo << ",(" << (filledRegion.y - 1) << "/" << (filledRegion.y + filledRegion.h + 1) << ")" << std::endl;
+#endif
+                        if( currentlyMarked[ (configuration_.levelDimension.x * (filledRegion.y - 1) ) + xmo ] == 0 ||
+                                currentlyMarked[ (configuration_.levelDimension.x * (filledRegion.y + filledRegion.h + 1 )) + xmo ] == 0 ) {
+                            connected = true;
+                            goto CONNECTIVITY_DONE;
+                        }
+                    }
+                    // Check the Y borders
+                    for( uint32_t ymo = filledRegion.y ; ymo < (filledRegion.y + filledRegion.h + 1) ; ++ymo ) {
+#ifdef FEC_DEBUG
+                        log() << "Examing Y borders at (" << (filledRegion.x - 1) << "/" << (filledRegion.x + filledRegion.w + 1) << ")," << ymo << std::endl;
+#endif
+                        if( currentlyMarked[ (configuration_.levelDimension.x * ymo ) + filledRegion.x - 1 ] == 0 ||
+                                currentlyMarked[ (configuration_.levelDimension.x * ymo ) + (filledRegion.x + filledRegion.w + 1) ] == 0 ) {
+                            connected = true;
+                            goto CONNECTIVITY_DONE;
+                        }
+                    }
+CONNECTIVITY_DONE:
+                    if( !connected ) {
+#ifdef FEC_DEBUG
+                        log() << "Region is not connected and too small. Will marked checked" << std::endl;
+#endif
+                        for( uint32_t my = filledRegion.y ; my < filledRegion.y + filledRegion.h ; ++my ) {
+                            for( uint32_t mx = filledRegion.x ; mx < filledRegion.x + filledRegion.w ; ++mx ) {
+                                currentlyMarked[ (configuration_.levelDimension.x * my) + mx ] = 1;
+                            }
+                        }
+                    }
+                    else {
+#ifdef FEC_DEBUG
+                        log() << "Region is still connected to free area. Leaving." << std::endl;
+#endif
+                    }
                 }
             }
         }

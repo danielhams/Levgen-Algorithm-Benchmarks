@@ -104,6 +104,75 @@ public:
     }
 };
 
+template <typename RandGenerator, typename ThreadLocalGenerationHelper>
+class OrigBruteForceGenerationStrategy : public GenerationStrategyBase {
+    LevelGeneratorConfiguration configuration_;
+    RandGenerator randGenerator_;
+
+    bool makeRoomSilentlyFail_( ThreadLocalGenerationHelper & threadLocalGenerationHelper, Level & l, uint32_t & gen ) {
+
+        uint32_t w= ( (randGenerator_( gen ) % (configuration_.roomSizeVariance)) + configuration_.minroomsize);
+        uint32_t h = ( (randGenerator_( gen ) % (configuration_.roomSizeVariance)) + configuration_.minroomsize );
+        uint32_t x = ( (randGenerator_( gen ) % (configuration_.levelDimensionMinusOne.x - w)) + 1 );
+        uint32_t y = ( (randGenerator_( gen ) % (configuration_.levelDimensionMinusOne.y - h)) + 1 );
+
+        vec4uint32 roomDim { x, y, w, h };
+#ifdef BF_DEBUG
+        log() << roomDim << " constructed - will now check" << std::endl;
+#endif
+
+        if( !threadLocalGenerationHelper.isCollision( l, roomDim ) ) {
+#ifdef BF_DEBUG
+            log() << roomDim << " begin added" << std::endl;
+#endif
+            uint8_t rgb[3];
+            rgb[0] = 64 + ( randGenerator_( gen ) % 128);
+            rgb[1] = 64 + ( randGenerator_( gen ) % 128);
+            rgb[2] = 64 + ( randGenerator_( gen ) % 128);
+
+            l.rooms.emplace_back( Room( gen, roomDim, rgb ) );
+            threadLocalGenerationHelper.addRoom( &(l.rooms[ l.rooms.size() - 1 ]) );
+            return true;
+        }
+        else {
+#ifdef BF_DEBUG
+            log() << roomDim << " COLLIDES - won't add." << std::endl;
+#endif
+            return false;
+        }
+    };
+
+public:
+    OrigBruteForceGenerationStrategy( LevelGeneratorConfiguration & configuration,
+            RandGenerator randGenerator ) :
+        configuration_( configuration ),
+        randGenerator_( randGenerator ) {};
+
+    void fillLevel( ThreadLocalGenerationHelper & threadLocalCollisionTester, Level & level, uint32_t & gen ) {
+        threadLocalCollisionTester.clearForNewLevel();
+        level.rooms.reserve( configuration_.numRooms );
+        uint32_t numRoomsMade( 0 );
+
+        for( uint32_t ii = 0 ; ii < configuration_.maxRoomAttempts ; ii++ ) {
+#ifdef BF_DEBUG
+            debugRooms( level );
+#endif
+            if( makeRoomSilentlyFail_( threadLocalCollisionTester, level, gen ) ) {
+                numRoomsMade++;
+                if( numRoomsMade >= configuration_.numRooms ) {
+                    break;
+                }
+            }
+        }
+
+        level.fillTiles();
+    };
+
+    ThreadLocalGenerationHelper newThreadLocalHelper() {
+        return ThreadLocalGenerationHelper( configuration_ );
+    }
+};
+
 struct SimpleCollisionThreadLocalHelper : public GenerationThreadLocalHelperBase {
     SimpleCollisionThreadLocalHelper( const LevelGeneratorConfiguration & configuration );
 
