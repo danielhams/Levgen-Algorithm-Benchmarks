@@ -226,7 +226,7 @@ int main(int argc, char** argv)
             Timer timer;
             timer.markBoundary( "Begin" );
 
-            /*
+            /**/
             {
                 timer.markBoundary( "Begin brute force simple xor" );
                 BruteForceGenerationStrategy<XorRandGenerator, SimpleCollisionThreadLocalHelper> bruteForceXorGenerationStrategy( lc, xorRandGenerator );
