@@ -69,7 +69,7 @@ public:
 
     void clearToDimensions( const vec4uint32 & freeArea );
 
-    void repopulateFloodFill( const OcclusionBuffer & occlussionBuffer );
+    void repopulateFloodFill( OcclusionBuffer & occlussionBuffer );
 
     void useFreeEntry( FreeEntryIter & fe, const vec4uint32 & useDimensions );
 

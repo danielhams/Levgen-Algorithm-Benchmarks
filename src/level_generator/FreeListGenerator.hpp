@@ -261,6 +261,10 @@ public:
             vec4uint32 expandedRoom { newRoom.x - 1, newRoom.y - 1, newRoom.w + 2, newRoom.h + 2 };
             // We make the free space computations easier if we occlude an expanded room
             occlusionBuffer_.occlude( expandedRoom );
+#ifdef FL_DEBUG
+            log() << "After free space use, occlusion buffer is now" << std::endl;
+            occlusionBuffer_.debug();
+#endif
             return true;
         }
         else {
