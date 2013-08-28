@@ -213,8 +213,8 @@ int main(int argc, char** argv)
 
         log() << "LevelGeneratorConfiguration: " << lc << endl;
 
-//        auto & roomsMetric( maxRoomsMetric );
-        auto & roomsMetric( minSpaceMetric );
+        auto & roomsMetric( maxRoomsMetric );
+//        auto & roomsMetric( minSpaceMetric );
 
         CRandGenerator cRandGenerator;
         XorRandGenerator xorRandGenerator;
