@@ -27,7 +27,7 @@ struct FreeListMinSizeSelector : FreeListSelectorBase {
     std::pair<bool, FreeEntryCache::FreeEntryIter> findFreeEntryOfDimensions( FreeEntryCache & freeEntryCache,
             const vec2uint32 & dimensionsToFind ) {
 #ifdef FL_DEBUG
-        log() << "Asked to find " << dimensionsToFind << std::endl;
+        log() << "MinSelector Asked to find " << dimensionsToFind << std::endl;
 #endif
         // std::lower bound is binary search to lowest insertion point
         FreeEntryCache::XToYFreeEntryMap::iterator wIter =
@@ -90,12 +90,12 @@ struct FreeListMaxSizeSelector : FreeListSelectorBase {
             const vec2uint32 & dimensionsToFind ) {
 
 #ifdef FL_DEBUG
-        log() << "Asked to find " << dimensionsToFind << std::endl;
+        log() << "MaxSelector Asked to find " << dimensionsToFind << std::endl;
 #endif
         // Starting from the largest walk backwards till we hit something too small and return
         // the largest we found during the walk.
         bool foundOne( false );
-        vec2uint32 currentLargestSize { 0, 0 };
+        uint32_t currentLargestArea { 0 };
         FreeEntryCache::FreeEntryIter currentLargest;
 
         FreeEntryCache::XToYFreeEntryMap::iterator wIter = freeEntryCache.xToYFreeEntryMap.end();
@@ -108,64 +108,70 @@ struct FreeListMaxSizeSelector : FreeListSelectorBase {
             return std::make_pair( foundOne, currentLargest );
         }
 
-        while( wIter != freeEntryCache.xToYFreeEntryMap.begin() ) {
-            wIter--;
-            const uint32_t & w( wIter->first );
+        if( wIter != freeEntryCache.xToYFreeEntryMap.begin() ) {
+            do {
+                wIter--;
+                const uint32_t & w( wIter->first );
 #ifdef FL_DEBUG
-            log() << "Examining entries with width " << w << std::endl;
+                log() << "Examining entries with width " << w << std::endl;
 #endif
 
-            if( w < dimensionsToFind.x ) {
+                if( w < dimensionsToFind.x ) {
 #ifdef FL_DEBUG
-                    log() << "Hit dimensions smaller than we are interested in. Leaving loop." << std::endl;
+                    log() << "Hit width dimensions smaller than we are interested in. Leaving loop." << std::endl;
 #endif
-                goto DONE;
-            }
-            FreeEntryCache::YToFreeEntryMap::iterator hIter = wIter->second.end();
-
-            while( hIter != wIter->second.begin() ) {
-                hIter--;
-                const uint32_t & h( hIter->first );
-#ifdef FL_DEBUG
-                log() << "Examining entries with height " << h << std::endl;
-#endif
-
-                if( h < dimensionsToFind.y ) {
-#ifdef FL_DEBUG
-                    log() << "Hit height dimension smaller than we are interested in. Skipping down to next width." << std::endl;
-#endif
-                    break;
+                    goto DONE;
                 }
+                FreeEntryCache::YToFreeEntryMap::iterator hIter = wIter->second.end();
 
-                if( (w > currentLargestSize.x && h >= currentLargestSize.y ) ||
-                        (w >= currentLargestSize.x && h > currentLargestSize.y ) ) {
+                if( hIter != wIter->second.begin() ) {
+                    do {
+                        hIter --;
+                        const uint32_t & h( hIter->first );
+                        uint32_t currentArea( w * h );
 #ifdef FL_DEBUG
-                    if( hIter->second.size() == 0 ) {
-                        log() << "ERROR - Shouldn't find empty free element lists!" << std::endl;
-                    }
-                    else {
-                        log() << "Using entry list begin() here." << std::endl;
+                        log() << "Examining entries with height " << h << std::endl;
 #endif
-                        FreeEntryCache::EntryList & el( hIter->second );
-                        currentLargest.xToYIter = wIter;
-                        currentLargest.yIter = hIter;
-                        currentLargest.entryListIter = el.begin();
 
-                        currentLargestSize.x = w;
-                        currentLargestSize.y = h;
-
-                        foundOne = true;
+                        if( h < dimensionsToFind.y ) {
 #ifdef FL_DEBUG
-                    }
+                            log() << "Hit height dimension smaller than we are interested in. Skipping down to next width." << std::endl;
 #endif
+                            break;
+                        }
+
+                        if( (w >= dimensionsToFind.x && h >= dimensionsToFind.y ) &&
+                                ( currentArea > currentLargestArea ) ) {
+#ifdef FL_DEBUG
+                            if( hIter->second.size() == 0 ) {
+                                log() << "ERROR - Shouldn't find empty free element lists!" << std::endl;
+                            }
+                            else {
+                                log() << "Using entry list begin() here." << std::endl;
+#endif
+                                FreeEntryCache::EntryList & el( hIter->second );
+                                currentLargest.xToYIter = wIter;
+                                currentLargest.yIter = hIter;
+                                currentLargest.entryListIter = el.begin();
+
+                                currentLargestArea = currentArea;
+
+                                foundOne = true;
+#ifdef FL_DEBUG
+                            }
+#endif
+                        }
+#ifdef FL_DEBUG
+                        log() << "Going around height" << std::endl;
+#endif
+                    }
+                    while( hIter != wIter->second.begin() );
                 }
 #ifdef FL_DEBUG
-                log() << "Going around height" << std::endl;
+                log() << "Going around width" << std::endl;
 #endif
             }
-#ifdef FL_DEBUG
-            log() << "Going around width" << std::endl;
-#endif
+            while( wIter != freeEntryCache.xToYFreeEntryMap.begin() );
         }
 
 DONE:
@@ -201,25 +207,9 @@ public:
 #endif
 
         // Clear the allocation cache and set one large free entry the size of the level
-        freeEntryCache_.clearToDimensions( vec4uint32 { 0, 0, configuration_.levelDimension.x, configuration_.levelDimension.y } );
+        freeEntryCache_.clear();
 
-        occlusionBuffer_.clear();
-        // And mark the borders "occluded"
-        // The X borders
-        occlusionBuffer_.occlude( vec4uint32 { 0, 0, configuration_.levelDimension.x, 1 } );
-        occlusionBuffer_.occlude( vec4uint32 { 0, configuration_.levelDimensionMinusOne.y, configuration_.levelDimension.x, 1 } );
-        // The Y borders
-        occlusionBuffer_.occlude( vec4uint32 { 0, 0, 1, configuration_.levelDimension.y } );
-        occlusionBuffer_.occlude( vec4uint32 { configuration_.levelDimensionMinusOne.x, 0, 1, configuration_.levelDimension.y } );
-    }
-
-    bool computeFreeLists( Level & level ) {
-#ifdef FL_DEBUG
-        log() << "Computing free lists" << std::endl;
-#endif
-        // Clear the allocation cache and re-populate using flood fill
-        freeEntryCache_.repopulateFloodFill( occlusionBuffer_ );
-        return freeEntryCache_.numFreeEntries;
+        occlusionBuffer_.clearWithBorders();
     }
 
     bool canInsertRoom( Level & level, vec4uint32 & newRoom, uint32_t & seed ) {
@@ -258,9 +248,9 @@ public:
 #endif
 
             freeEntryCache_.useFreeEntry( fe, newRoom );
-            vec4uint32 expandedRoom { newRoom.x - 1, newRoom.y - 1, newRoom.w + 2, newRoom.h + 2 };
+//            vec4uint32 expandedRoom { newRoom.x - 1, newRoom.y - 1, newRoom.w + 2, newRoom.h + 2 };
             // We make the free space computations easier if we occlude an expanded room
-            occlusionBuffer_.occlude( expandedRoom );
+            occlusionBuffer_.occludeWithBorder( newRoom );
 #ifdef FL_DEBUG
             log() << "After free space use, occlusion buffer is now" << std::endl;
             occlusionBuffer_.debug();
@@ -287,7 +277,7 @@ public:
 #ifdef FL_DEBUG
         log() << "Asking free entry cache to repopulate free list using flood fill and occlusion buffer" << std::endl;
 #endif
-        freeEntryCache_.repopulateFloodFill( occlusionBuffer_ );
+        freeEntryCache_.repopulateFloodFillNew( occlusionBuffer_ );
         return hasFreeSpace();
     }
 
@@ -326,6 +316,7 @@ public:
 #endif
         helper.resetFreeEntryCache();
 
+        bool compactionCount( 0 );
         bool spaceAvailable( true );
         uint32_t roomsCreated( 0 );
         uint32_t attempts( 0 );
@@ -352,14 +343,6 @@ public:
                         goto DONE;
                     }
                     attempts = 0;
-
-//                    // Compact every ten rooms placed
-//                    if( roomsCreated % 10 == 0 ) {
-//#ifdef FL_DEBUG
-//                        log() << "Hit insert limit - falling out to compaction" << std::endl;
-//#endif
-//                        break;
-//                    }
                 }
                 else {
                     attempts++;
@@ -367,16 +350,32 @@ public:
 #ifdef FL_DEBUG
                         log() << "Exceeded number of room creation attempts" << std::endl;
 #endif
-                        goto DONE;
+                        // If we haven't already tried to compact the free space
+                        // try that
+                        if( compactionCount == 0 ) {
+#ifdef FL_DEBUG
+                            log() << "Haven't tried computing free lists yet, will do that first" << std::endl;
+#endif
+                            attempts = 0;
+                            goto COMPUTE_FREE_LISTS;
+                        }
+                        else {
+#ifdef FL_DEBUG
+                            log() << "Already tried computing free list so will stop" << std::endl;
+#endif
+                            goto DONE;
+                        }
                     }
                 }
                 spaceAvailable = helper.hasFreeSpace();
             }
+COMPUTE_FREE_LISTS:
             // Exhausted current free lists, compact free space using flood fill
 #ifdef FL_DEBUG
-                log() << "Compacting free space" << std::endl;
+            log() << "Compacting free space" << std::endl;
 #endif
             spaceAvailable = helper.computeFreeLists();
+            compactionCount++;
         }
 #ifdef FL_DEBUG
         log() << "All possible space taken." << std::endl;

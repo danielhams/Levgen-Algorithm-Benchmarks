@@ -25,7 +25,9 @@ class FreeEntryCache {
     bool previousSplitLeftHanded_;
 
     void insertFreeEntry_( const vec4uint32 & newFreeEntry );
-    void floodFillRegion_( std::vector<uint8_t> & currentlyMarked, vec4uint32 & regionToFlood );
+    void floodFillRegion_( std::vector<char> & currentlyMarked, vec4uint32 & regionToFlood );
+    bool floodFillRegionLargeEnough_( std::vector<char> & currentlyMarked, vec4uint32 & foundRegion );
+    bool floodFillRegionConnected_( std::vector<char> & currentlyMarked, vec4uint32 & foundRegion );
 
 public:
     // Entry cache _should_ be relatively sparse
@@ -68,9 +70,10 @@ public:
 
     FreeEntryCache( const LevelGeneratorConfiguration & configuration );
 
-    void clearToDimensions( const vec4uint32 & freeArea );
+    void clear();
 
-    void repopulateFloodFill( OcclusionBuffer & occlussionBuffer );
+//    void repopulateFloodFill( OcclusionBuffer & occlussionBuffer );
+    void repopulateFloodFillNew( OcclusionBuffer & occlussionBuffer );
 
     void useFreeEntry( FreeEntryIter & fe, const vec4uint32 & useDimensions );
 

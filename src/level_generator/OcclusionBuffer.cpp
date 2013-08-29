@@ -44,7 +44,7 @@ OcclusionBuffer::OcclusionBuffer( const vec2uint32 & dimensions ) :
 bool OcclusionBuffer::isOccluded( const vec4uint32 & toTest ){
     for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
         for( uint32_t x = toTest.x ; x < toTest.x + toTest.w ; ++x ) {
-            if( buffer[ (y*dimensions.x) + x ] ) {
+            if( buffer[ (y*dimensions.x) + x ] != ' ') {
                 return true;
             }
         }
@@ -58,7 +58,7 @@ bool OcclusionBuffer::isExpandedOccluded( const vec4uint32 & toTest ){
 #endif
     for( uint32_t y = toTest.y-1 ; y <= toTest.y + toTest.h ; ++y ) {
         for( uint32_t x = toTest.x-1 ; x <= toTest.x + toTest.w ; ++x ) {
-            if( buffer[ (y*dimensions.x) + x ] ) {
+            if( buffer[ (y*dimensions.x) + x ] != ' ') {
                 return true;
             }
         }
@@ -72,13 +72,40 @@ void OcclusionBuffer::occlude( const vec4uint32 & toTest ) {
 #endif
     for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
         for( uint32_t x = toTest.x ; x < toTest.x + toTest.w ; ++x ) {
-            buffer[ (y*dimensions.x) + x ] = 1;
+            buffer[ (y*dimensions.x) + x ] = 'O';
         }
     }
 }
 
+void OcclusionBuffer::occludeWithBorder( const vec4uint32 & toTest ) {
+#ifdef OC_DEBUG
+    log() << "Asked to occlude with border" << toTest << endl;
+#endif
+    occlude( toTest );
+    for( uint32_t x = toTest.x - 1 ; x < toTest.x + toTest.w + 1; ++x ) {
+        buffer[ ((toTest.y-1)*dimensions.x) + x ] = 'B';
+        buffer[ ((toTest.y + toTest.h )*dimensions.x) + x ] = 'B';
+    }
+    for( uint32_t y = toTest.y ; y < toTest.y + toTest.h ; ++y ) {
+        buffer[ (y*dimensions.x) + (toTest.x - 1) ] = 'B';
+        buffer[ (y*dimensions.x) + (toTest.x + toTest.w) ] = 'B';
+    }
+}
+
 void OcclusionBuffer::clear(){
-    std::fill( buffer.begin(), buffer.end(), 0 );
+    std::fill( buffer.begin(), buffer.end(), ' ' );
+}
+
+void OcclusionBuffer::clearWithBorders() {
+    clear();
+    for( uint32_t x = 0 ; x < dimensions.x ; ++x ) {
+        buffer[ x ] = 'B';
+        buffer[ ((dimensions.y-1)*dimensions.x) + x ] = 'B';
+    }
+    for( uint32_t y = 1 ; y < dimensions.y ; ++y ) {
+        buffer[ (y*dimensions.x) ] = 'B';
+        buffer[ (y*dimensions.x) + (dimensions.x-1) ] = 'B';
+    }
 }
 
 void OcclusionBuffer::debug() const {
@@ -86,9 +113,8 @@ void OcclusionBuffer::debug() const {
     ss <<  "Buffer is currently:" << std::endl;
     for( uint32_t y = 0 ; y < dimensions.y ; ++y ) {
         for( uint32_t x = 0 ; x < dimensions.x ; ++x ) {
-            const uint8_t & val( buffer[ (dimensions.x * y) + x ] );
-            uint32_t iv( val );
-            ss << iv;
+            const char & val( buffer[ (dimensions.x * y) + x ] );
+            ss << val;
         }
         ss << std::endl;
     }
