@@ -219,8 +219,6 @@ int main(int argc, char** argv)
         CRandGenerator cRandGenerator;
         XorRandGenerator xorRandGenerator;
 
-        bool focusOnFreeList( false );
-
         for( uint32_t i = 0 ; i < 1 ; ++i ) {
 
             Timer timer;
@@ -330,6 +328,7 @@ int main(int argc, char** argv)
                 timer.markBoundary( "Save ppm" );
                 logLevelStats( log, "fl minsize xor", flgrLevel );
             }
+            /**/
 
             {
                 timer.markBoundary( "Beginning free list min size crand" );
@@ -344,6 +343,7 @@ int main(int argc, char** argv)
                 logLevelStats( log, "fl minsize crand", flcrLevel );
             }
 
+            /**/
             {
                 timer.markBoundary( "Beginning free list max size xor" );
                 typedef FreeListThreadLocalHelper<XorRandGenerator, FreeListMaxSizeSelector> FreeListMaxHelper;
