@@ -65,10 +65,17 @@ void FreeEntryCache::insertFreeEntry_( const vec4uint32 & newFreeEntry ) {
 #ifdef FEC_DEBUG
         log() << "XtoY entry map is empty for width " << newFreeEntry.w << endl;
 #endif
-        std::pair<XToYFreeEntryMap::iterator, bool> ins = xToYFreeEntryMap.emplace( newFreeEntry.w, YToFreeEntryMap() );
-        YToFreeEntryMap & yToEntryMap = (*(ins.first)).second;
-        std::pair<YToFreeEntryMap::iterator, bool> yins = yToEntryMap.emplace( newFreeEntry.h, EntryList() );
-        EntryList & entryList = (*(yins.first)).second;
+        // Real C++11
+//        std::pair<XToYFreeEntryMap::iterator, bool> ins = xToYFreeEntryMap.emplace( newFreeEntry.w, YToFreeEntryMap() );
+//        YToFreeEntryMap & yToEntryMap = (*(ins.first)).second;
+//        std::pair<YToFreeEntryMap::iterator, bool> yins = yToEntryMap.emplace( newFreeEntry.h, EntryList() );
+//        EntryList & entryList = (*(yins.first)).second;
+        xToYFreeEntryMap.insert( std::make_pair( newFreeEntry.w, YToFreeEntryMap() ) );
+        XToYFreeEntryMap::iterator ins = xToYFreeEntryMap.find( newFreeEntry.w );
+        YToFreeEntryMap & yToEntryMap = (*ins).second;
+        yToEntryMap.insert( std::make_pair( newFreeEntry.h, EntryList() ) );
+        YToFreeEntryMap::iterator yins = yToEntryMap.find( newFreeEntry.h );
+        EntryList & entryList = (*yins).second;
         entryListToInsertInto = &entryList;
     }
     else {
@@ -88,8 +95,12 @@ void FreeEntryCache::insertFreeEntry_( const vec4uint32 & newFreeEntry ) {
             log() << "Missing height map entry." << endl;
 #endif
             EntryList newEntryList;
-            std::pair<YToFreeEntryMap::iterator, bool> ins = wIter->second.emplace( newFreeEntry.h, newEntryList );
-            entryListToInsertInto = &(*ins.first).second;
+            // Real C++11
+//            std::pair<YToFreeEntryMap::iterator, bool> ins = wIter->second.emplace( newFreeEntry.h, newEntryList );
+//            entryListToInsertInto = &(*ins.first).second;
+            wIter->second.insert( std::make_pair( newFreeEntry.h, newEntryList ) );
+            YToFreeEntryMap::iterator ins = wIter->second.find( newFreeEntry.h );
+            entryListToInsertInto = &(*ins).second;
         }
         else {
 #ifdef FEC_DEBUG
