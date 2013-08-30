@@ -117,10 +117,6 @@ void FreeEntryCache::insertFreeEntry_( const vec4uint32 & newFreeEntry ) {
     numFreeEntries++;
 }
 
-inline char & cmel( const vec2uint32 & dimension, vector<char> & buffer, const uint32_t x, const uint32_t y ) {
-    return buffer[ (dimension.x * y) + x ];
-}
-
 void FreeEntryCache::floodFillRegion_( vector<char> & currentlyMarked, vec4uint32 & floodRegion ) {
     bool advancingX( true );
     bool advancingY( true );
@@ -135,7 +131,8 @@ void FreeEntryCache::floodFillRegion_( vector<char> & currentlyMarked, vec4uint3
 #ifdef FEC_DEBUG
                     log() << "Advancing X checking " << curX << " " << testY << endl;
 #endif
-                    if( cmel( configuration_.levelDimension, currentlyMarked, curX, testY ) != ' ' ) {
+                    uint32_t index( (configuration_.levelDimension.x * testY ) + curX );
+                    if( currentlyMarked[ index ] != ' ' ) {
 #ifdef FEC_DEBUG
                         log() << "Advancing X hit filled point " << endl;
 #endif
@@ -164,7 +161,8 @@ void FreeEntryCache::floodFillRegion_( vector<char> & currentlyMarked, vec4uint3
 #ifdef FEC_DEBUG
                     log() << "Advancing Y checking " << testX << " " << curY << endl;
 #endif
-                    if( cmel( configuration_.levelDimension, currentlyMarked, testX, curY ) != ' ' ) {
+                    uint32_t index( (configuration_.levelDimension.x * curY ) + testX );
+                    if( currentlyMarked[ index ] != ' ' ) {
 #ifdef FEC_DEBUG
                         log() << "Advancing Y hit filled point " << endl;
 #endif
@@ -209,8 +207,10 @@ bool FreeEntryCache::floodFillRegionConnected_( std::vector<char> & currentlyMar
 #endif
         uint32_t lowY( foundRegion.y - 1 );
         uint32_t highY( foundRegion.y + foundRegion.h );
-        if( cmel( configuration_.levelDimension, currentlyMarked, xmo, lowY ) == ' ' ||
-                cmel( configuration_.levelDimension, currentlyMarked, xmo, highY ) == ' ' ) {
+        uint32_t lowIndex( (configuration_.levelDimension.x * lowY ) + xmo );
+        uint32_t highIndex( (configuration_.levelDimension.x * highY ) + xmo );
+        if( currentlyMarked[ lowIndex ] == ' ' ||
+                currentlyMarked[ highIndex ] == ' ' ) {
 #ifdef FEC_DEBUG
             log() << "One of the X borders has empty" << endl;
 #endif
@@ -226,8 +226,10 @@ bool FreeEntryCache::floodFillRegionConnected_( std::vector<char> & currentlyMar
 #endif
         uint32_t lowX( foundRegion.x - 1 );
         uint32_t highX( foundRegion.x + foundRegion.w );
-        if( cmel( configuration_.levelDimension, currentlyMarked, lowX, ymo ) == ' ' ||
-                cmel( configuration_.levelDimension, currentlyMarked, highX, ymo ) == ' ' ) {
+        uint32_t lowIndex( (configuration_.levelDimension.x * ymo ) + lowX );
+        uint32_t highIndex( (configuration_.levelDimension.x * ymo ) + highX );
+        if( currentlyMarked[ lowIndex ] == ' ' ||
+                currentlyMarked[ highIndex] == ' ' ) {
 #ifdef FEC_DEBUG
             log() << "One of the Y borders has empty" << endl;
 #endif
@@ -281,7 +283,7 @@ void FreeEntryCache::repopulateFloodFillNew( OcclusionBuffer & occlussionBuffer 
 #ifdef FEC_DEBUG
             log() << "Examining pixel " << x << " " << y << endl;
 #endif
-            if( cmel( configuration_.levelDimension, currentlyMarked, x, y ) == ' ' ) {
+            if( currentlyMarked[ index ] == ' ' ) {
 #ifdef FEC_DEBUG
                 log() << "Is free, will attempt a flood fill" << endl;
 #endif
@@ -300,7 +302,8 @@ void FreeEntryCache::repopulateFloodFillNew( OcclusionBuffer & occlussionBuffer 
 
                     for( uint32_t my = filledRegion.y ; my < filledRegion.y + filledRegion.h ; ++my ) {
                         for( uint32_t mx = filledRegion.x ; mx < filledRegion.x + filledRegion.w ; ++mx ) {
-                            cmel( configuration_.levelDimension, currentlyMarked, mx, my ) = 'F';
+                            uint32_t index( (configuration_.levelDimension.x * my ) + mx );
+                            currentlyMarked[ index ] = 'F';
                         }
                     }
 
