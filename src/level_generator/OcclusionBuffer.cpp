@@ -102,7 +102,7 @@ void OcclusionBuffer::clearWithBorders() {
         buffer[ x ] = 'B';
         buffer[ ((dimensions.y-1)*dimensions.x) + x ] = 'B';
     }
-    for( uint32_t y = 1 ; y < dimensions.y ; ++y ) {
+    for( uint32_t y = 1 ; y < dimensions.y - 1 ; ++y ) {
         buffer[ (y*dimensions.x) ] = 'B';
         buffer[ (y*dimensions.x) + (dimensions.x-1) ] = 'B';
     }
