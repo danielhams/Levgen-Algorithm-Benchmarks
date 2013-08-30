@@ -110,4 +110,6 @@ void saveLevelPpm( const Level & level, const string & filename ) {
     }
 }
 
+Log MetricBase::log("MetricBase");
+
 } /* namespace level_generator */

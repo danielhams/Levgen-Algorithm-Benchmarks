@@ -174,22 +174,24 @@ public:
     void debugRooms( Level & l );
 };
 
-class GenerationThreadLocalHelperBase {
-protected:
+struct GenerationThreadLocalHelperBase {
     static Log log;
 };
 
+struct MetricBase {
+    static Log log;
+};
 
-struct NumRoomsMetric {
+struct NumRoomsMetric : MetricBase {
     inline bool compare( const Level & x, const Level & y ) {
         return y.rooms.size() > x.rooms.size();
     }
 };
 
-struct MinSpaceMetric {
+struct MinSpaceMetric : MetricBase {
     inline uint32_t countSpaceForLevel( const Level & l ) {
         uint32_t spaceCount( 0 );
-        for( uint32_t i ; i < l.tiles.size() ; ++i ) {
+        for( uint32_t i = 0 ; i < l.tiles.size() ; ++i ) {
             if( l.tiles[i] == nullptr ) {
                 spaceCount++;
             }
