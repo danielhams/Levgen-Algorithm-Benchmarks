@@ -48,10 +48,10 @@ public:
     typedef std::list<vec4uint32> EntryList;
     struct YToEntryListCompare {
         bool operator()( std::pair< const uint32_t, EntryList > & a,
-                const uint32_t & b ) {
+                const uint32_t & b ) const {
             return a.first < b;
         }
-        bool operator()( const uint32_t & a, const uint32_t & b ) {
+        bool operator()( const uint32_t & a, const uint32_t & b ) const {
             return a < b;
         }
     };
@@ -60,11 +60,11 @@ public:
 
     struct XToYCompare {
         bool operator()( std::pair<const uint32_t, YToFreeEntryMap> & a,
-                const uint32_t & b ) {
+                const uint32_t & b ) const {
             return a.first < b;
         }
 
-        bool operator()( const uint32_t & a, const uint32_t & b ) {
+        bool operator()( const uint32_t & a, const uint32_t & b ) const {
             return a < b;
         }
     };

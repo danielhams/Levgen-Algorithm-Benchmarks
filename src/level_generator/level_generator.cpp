@@ -157,7 +157,7 @@ int main(int argc, char** argv)
                 showUsageSummary = true;
             }
             numThreads = vm["threads"].as<int>();
-            if( numThreads < 1 || numThreads > 4 )
+            if( numThreads < 1 || numThreads > 8 )
             {
                 showUsageSummary = true;
             }
@@ -302,7 +302,7 @@ int main(int argc, char** argv)
                 timer.markBoundary( "Save ppm" );
                 logLevelStats( log, "bf ob cr", bfobcLevel );
             }
-
+            /**/
             {
                 timer.markBoundary( "Begin original brute force occlusion buffer crand" );
                 OrigBruteForceGenerationStrategy<CRandGenerator, OcclusionThreadLocalHelper> obruteForceCrandGenerationStrategy( lc, cRandGenerator );
@@ -315,7 +315,7 @@ int main(int argc, char** argv)
                 timer.markBoundary( "Save ppm" );
                 logLevelStats( log, "obf ob cr", obfcLevel );
             }
-
+            /**/
             {
                 timer.markBoundary( "Beginning free list min size xor" );
                 typedef FreeListThreadLocalHelper<XorRandGenerator, FreeListMinSizeSelector> FreeListMinHelper;

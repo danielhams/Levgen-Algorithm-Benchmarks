@@ -330,7 +330,7 @@ public:
 #endif
         helper.resetFreeEntryCache();
 
-        bool compactionCount( 0 );
+        uint32_t compactionCount( 0 );
         bool spaceAvailable( true );
         uint32_t roomsCreated( 0 );
         uint32_t attempts( 0 );
