@@ -65,9 +65,9 @@ protected:
         std::ptrdiff_t n( pptr() - pbase() );
         pbump( -n );
         lock_guard<mutex> lock( osMutex_ );
-        bool success = cout.write( pbase(), n );
+        cout.write( pbase(), n );
         cout.flush();
-        return success;
+        return cout.badbit != 0;
     }
 
 private:
@@ -125,7 +125,11 @@ thread_specific_ptr<ThreadOutputStream> LogPrivateImpl::threadOutputStream_;
 
 Log::Log( const std::string & name ) :
         name_( name ),
-        pimpl_( std::auto_ptr<LogPrivateImpl>( new LogPrivateImpl( name_ ) ) ) {
+        pimpl_( std::unique_ptr<LogPrivateImpl>( new LogPrivateImpl( name_ ) ) ) {
+}
+
+Log::~Log()
+{
 }
 
 std::ostream & Log::operator()() {

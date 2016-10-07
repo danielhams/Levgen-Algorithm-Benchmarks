@@ -38,11 +38,12 @@ class LogPrivateImpl;
 // Should be multi-threaded, but isn't and I didn't want to introduce another dependency
 class Log {
     const std::string name_;
-    std::auto_ptr<LogPrivateImpl> pimpl_;
+    std::unique_ptr<LogPrivateImpl> pimpl_;
     Log( const Log & );
     Log & operator=(const Log &);
 public:
     Log( const std::string & name );
+    ~Log();
     std::ostream & operator()();
 };
 
